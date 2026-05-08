@@ -2527,16 +2527,18 @@ function doLogout() {
 }
 
 function updateMemberCount(n) {
-  if (!n) return;
   const wrap = document.getElementById('hdr-members-wrap');
   const el   = document.getElementById('hdr-members');
   if (!wrap || !el) return;
-  el.textContent = Number(n).toLocaleString();
+  el.textContent = Number(n || 0).toLocaleString();
   wrap.style.display = '';
 }
 
 function fetchMemberCount() {
-  fetch('/api/user-count').then(r => r.json()).then(d => updateMemberCount(d.count)).catch(() => {});
+  fetch('/api/user-count')
+    .then(r => r.json())
+    .then(d => updateMemberCount(d.count))
+    .catch(() => updateMemberCount(0));
 }
 
 function authSuccess(email) {
