@@ -2521,9 +2521,37 @@ function authSuccess(email) {
   if (email) { emailEl.textContent = email; userEl.style.display = 'flex'; }
 }
 
-// ── Boot: check for existing session ─────────────────────────────
+// ── Boot: check for existing session or confirmation token in URL ─
 (function setupAuth() {
-  if (_IS_LOCAL) { init(); return; } // skip auth when developing locally
+  if (_IS_LOCAL) { init(); return; }
+
+  // Handle email confirmation redirect (link in confirmation email lands here)
+  const hashToken = window.location.hash.match(/confirmation_token=([^&]+)/)?.[1]
+                 || window.location.hash.match(/access_token=([^&]+)/)?.[1];
+  if (hashToken) {
+    history.replaceState(null, '', window.location.pathname); // clean the URL
+    // Exchange confirmation token for a session
+    fetch(_IDENTITY + '/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: hashToken, type: 'signup' })
+    }).then(r => r.json()).then(d => {
+      if (d.access_token) {
+        localStorage.setItem('ae_token', d.access_token);
+        localStorage.setItem('ae_user',  d.email || '');
+        authSuccess(d.email || '');
+        init();
+      } else {
+        // Might already be a valid access_token directly in hash
+        localStorage.setItem('ae_token', hashToken);
+        document.getElementById('auth-gate').style.display = 'flex';
+        authMsg('Email confirmed! Please sign in.', true);
+      }
+    }).catch(() => {
+      document.getElementById('auth-gate').style.display = 'flex';
+    });
+    return;
+  }
 
   const token = localStorage.getItem('ae_token');
   const email = localStorage.getItem('ae_user');
