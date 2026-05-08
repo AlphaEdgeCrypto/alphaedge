@@ -2426,6 +2426,13 @@ async function fetchOnChain(sym) {
 // DATA LAYER — STOCK CHARTS (Yahoo Finance primary, AV fallback)
 // ═══════════════════════════════════════════════════════════════════
 
+function dedupeCandles(candles) {
+  // Sort by time and remove duplicates (Yahoo Finance can return dupes at market open/close)
+  const seen = new Map();
+  candles.forEach(c => seen.set(c.time, c));
+  return Array.from(seen.values()).sort((a, b) => a.time - b.time);
+}
+
 async function fetchStockChart(sym, uiInterval) {
   const yhMap = {
     '1m':  { interval: '1m',  range: '1d'  },
@@ -2433,10 +2440,11 @@ async function fetchStockChart(sym, uiInterval) {
     '15m': { interval: '15m', range: '5d'  },
     '1h':  { interval: '60m', range: '1mo' },
     '4h':  { interval: '60m', range: '3mo' },
-    '1d':  { interval: '1d',  range: '6mo' },
+    '1d':  { interval: '1d',  range: '1y'  },
   };
   const yp = yhMap[uiInterval] || { interval: '15m', range: '5d' };
 
+  // Race all host+proxy combos simultaneously — fastest one wins
   const hosts   = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
   const proxies = [
     'https://corsproxy.io/?url=',
@@ -2444,42 +2452,52 @@ async function fetchStockChart(sym, uiInterval) {
     'https://api.codetabs.com/v1/proxy/?quest=',
   ];
 
-  for (const host of hosts) {
-    for (const proxy of proxies) {
-      try {
-        const yhUrl = `${host}/v8/finance/chart/${sym}?interval=${yp.interval}&range=${yp.range}&events=history`;
-        const r = await fetch(proxy + encodeURIComponent(yhUrl), { signal: AbortSignal.timeout(8000) });
-        if (!r.ok) continue;
-        const d = await r.json();
-        const res = d?.chart?.result?.[0];
-        if (res?.timestamp?.length > 5) {
-          const q = res.indicators.quote[0];
-          const candles = res.timestamp.map((t, i) => ({
-            time: t,
-            open:   +q.open[i]   || 0,
-            high:   +q.high[i]   || 0,
-            low:    +q.low[i]    || 0,
-            close:  +q.close[i]  || 0,
-            volume: +q.volume[i] || 0
-          })).filter(c => c.close > 0);
-          if (candles.length > 5) return candles;
-        }
-      } catch(_) {}
-    }
-  }
+  const parseYahoo = async (host, proxy) => {
+    const yhUrl = `${host}/v8/finance/chart/${sym}?interval=${yp.interval}&range=${yp.range}&events=history`;
+    const r = await fetch(proxy + encodeURIComponent(yhUrl), { signal: AbortSignal.timeout(7000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const res = d?.chart?.result?.[0];
+    if (!res?.timestamp?.length > 5) throw new Error('no data');
+    const q = res.indicators.quote[0];
+    const raw = res.timestamp.map((t, i) => ({
+      time:   t,
+      open:   parseFloat(q.open[i])   || 0,
+      high:   parseFloat(q.high[i])   || 0,
+      low:    parseFloat(q.low[i])    || 0,
+      close:  parseFloat(q.close[i])  || 0,
+      volume: parseFloat(q.volume[i]) || 0,
+    })).filter(c => c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0);
+    if (raw.length < 5) throw new Error('too few candles');
+    return dedupeCandles(raw);
+  };
 
-  // Fallback: Alpha Vantage daily
-  if (!avKey) return [];
   try {
-    const avUrl = `${_AV_BASE}?function=TIME_SERIES_DAILY&symbol=${sym}&outputsize=compact${_AV_KEY}`;
-    const d = await (await fetch(avUrl)).json();
-    const key = 'Time Series (Daily)';
-    if (!d[key]) return [];
-    return Object.entries(d[key]).reverse().map(([ts, v]) => ({
-      time: ts,
-      open: +v['1. open'], high: +v['2. high'], low: +v['3. low'],
-      close: +v['4. close'], volume: +v['5. volume']
-    }));
+    const attempts = hosts.flatMap(host => proxies.map(proxy => parseYahoo(host, proxy)));
+    const candles = await Promise.any(attempts);
+    if (candles.length > 5) return candles;
+  } catch(_) {}
+
+  // Fallback: Alpha Vantage intraday or daily via our proxy
+  try {
+    let avUrl, avKey2 = 'Time Series (Daily)', isIntraday = false;
+    if (['1m','5m','15m','1h'].includes(uiInterval)) {
+      const avIvMap = { '1m':'1min', '5m':'5min', '15m':'15min', '1h':'60min' };
+      avUrl = `${_AV_BASE}?function=TIME_SERIES_INTRADAY&symbol=${sym}&interval=${avIvMap[uiInterval]}&outputsize=compact${_AV_KEY}`;
+      avKey2 = `Time Series (${avIvMap[uiInterval]})`;
+      isIntraday = true;
+    } else {
+      avUrl = `${_AV_BASE}?function=TIME_SERIES_DAILY&symbol=${sym}&outputsize=compact${_AV_KEY}`;
+    }
+    const d = await (await fetch(avUrl, { signal: AbortSignal.timeout(10000) })).json();
+    if (!d[avKey2]) return [];
+    const raw = Object.entries(d[avKey2]).reverse().map(([ts, v]) => ({
+      time:   isIntraday ? Math.floor(new Date(ts).getTime() / 1000) : ts,
+      open:   +v['1. open'],  high:  +v['2. high'],
+      low:    +v['3. low'],   close: +v['4. close'],
+      volume: +v['5. volume'],
+    })).filter(c => c.close > 0);
+    return isIntraday ? dedupeCandles(raw) : raw;
   } catch(e) { return []; }
 }
 
@@ -2529,17 +2547,23 @@ async function loadStockChart(sym) {
   document.getElementById('live-dot').className = 'live-dot';
   buildCharts();
 
-  const candles = await fetchStockChart(sym, CS.interval);
-  if (candles.length) {
-    setCandleData(candles);
-    document.getElementById('live-dot').className = 'live-dot streaming';
-    document.getElementById('live-status').textContent = `${sym} — refreshing every 60s`;
-    CS.stockTimer = setInterval(async () => {
-      const fresh = await fetchStockChart(sym, CS.interval);
-      if (fresh.length) setCandleData(fresh);
-    }, 60000);
-  } else {
-    document.getElementById('live-status').textContent = `${sym} — could not load chart data`;
+  try {
+    const candles = await fetchStockChart(sym, CS.interval);
+    if (candles.length) {
+      setCandleData(candles);
+      document.getElementById('live-dot').className = 'live-dot streaming';
+      document.getElementById('live-status').textContent = `${sym} — refreshing every 60s`;
+      CS.stockTimer = setInterval(async () => {
+        const fresh = await fetchStockChart(sym, CS.interval);
+        if (fresh.length) setCandleData(fresh);
+      }, 60000);
+    } else {
+      document.getElementById('live-status').textContent = `${sym} — no data available for this interval`;
+      document.getElementById('live-dot').className = 'live-dot';
+    }
+  } catch(e) {
+    document.getElementById('live-status').textContent = `${sym} — failed to load (${e.message})`;
+    document.getElementById('live-dot').className = 'live-dot';
   }
   document.getElementById('onchain-rows').innerHTML = `<div style="font-size:11px;color:var(--muted)">On-chain data is for crypto assets only.</div>`;
 }
