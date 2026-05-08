@@ -297,18 +297,34 @@
     .cal-flag  { font-size: 13px; }
     .cal-forecast-val { color: var(--yellow); font-weight: 700; }
   </style>
-<!-- Netlify Identity widget (handles login/signup modal automatically) -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
-<!-- ══ AUTH GATE — shown until user is signed in ══════════════════ -->
-<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0a0b0f;z-index:9999;flex-direction:column;align-items:center;justify-content:center">
-  <div style="text-align:center;max-width:400px;padding:48px 32px;background:#111318;border:1px solid #1e2130;border-radius:16px;box-shadow:0 24px 80px #000">
-    <div style="font-size:40px;font-weight:900;letter-spacing:-1px;color:#10b981;margin-bottom:6px">α AlphaEdge</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:36px">Investment Signal Dashboard — Private Access</div>
-    <button onclick="netlifyIdentity.open()" style="width:100%;padding:14px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0.3px">Sign In / Create Account</button>
-    <p style="font-size:11px;color:#475569;margin-top:20px;line-height:1.6">Free account · No credit card · Takes 30 seconds</p>
+<!-- ══ AUTH GATE ═══════════════════════════════════════════════════ -->
+<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0a0b0f;z-index:9999;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:420px;padding:48px 36px;background:#111318;border:1px solid #1e2130;border-radius:16px;box-shadow:0 32px 80px #000">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:36px;font-weight:900;color:#10b981;letter-spacing:-1px">α AlphaEdge</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">Investment Signal Dashboard</div>
+    </div>
+    <!-- Tab toggle -->
+    <div style="display:flex;background:#0a0b0f;border-radius:8px;padding:3px;margin-bottom:24px">
+      <button id="tab-login-btn"  onclick="authTab('login')"  style="flex:1;padding:9px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;background:#10b981;color:#000">Sign In</button>
+      <button id="tab-signup-btn" onclick="authTab('signup')" style="flex:1;padding:9px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;background:transparent;color:#64748b">Sign Up</button>
+    </div>
+    <!-- Login form -->
+    <div id="auth-login-form">
+      <input id="auth-email"    type="email"    placeholder="Email address" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0a0b0f;border:1px solid #1e2130;border-radius:8px;color:#f1f5f9;font-size:14px;margin-bottom:12px;outline:none">
+      <input id="auth-password" type="password" placeholder="Password"      style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0a0b0f;border:1px solid #1e2130;border-radius:8px;color:#f1f5f9;font-size:14px;margin-bottom:20px;outline:none">
+      <button onclick="doLogin()" style="width:100%;padding:13px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer">Sign In →</button>
+    </div>
+    <!-- Signup form -->
+    <div id="auth-signup-form" style="display:none">
+      <input id="auth-su-email"    type="email"    placeholder="Email address" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0a0b0f;border:1px solid #1e2130;border-radius:8px;color:#f1f5f9;font-size:14px;margin-bottom:12px;outline:none">
+      <input id="auth-su-password" type="password" placeholder="Choose a password" style="width:100%;box-sizing:border-box;padding:12px 14px;background:#0a0b0f;border:1px solid #1e2130;border-radius:8px;color:#f1f5f9;font-size:14px;margin-bottom:20px;outline:none">
+      <button onclick="doSignup()" style="width:100%;padding:13px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer">Create Account →</button>
+    </div>
+    <div id="auth-msg" style="margin-top:16px;font-size:12px;text-align:center;min-height:18px"></div>
   </div>
 </div>
 
@@ -339,7 +355,7 @@
     </button>
     <div id="hdr-user" style="display:none;align-items:center;gap:10px;border-left:1px solid var(--border);padding-left:14px">
       <span id="hdr-user-email" style="font-size:11px;color:var(--muted)"></span>
-      <button class="btn btn-ghost" style="font-size:11px;padding:4px 9px" onclick="netlifyIdentity.logout()">Sign Out</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 9px" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 </div>
@@ -2422,55 +2438,101 @@ function buildAssetTabs() {
 buildAssetTabs();
 
 // ═══════════════════════════════════════════════════════════════════
-// AUTH — Netlify Identity gate
+// AUTH — custom form using Netlify Identity REST API directly
 // ═══════════════════════════════════════════════════════════════════
-(function setupAuth() {
-  const gate     = document.getElementById('auth-gate');
-  const userEl   = document.getElementById('hdr-user');
-  const emailEl  = document.getElementById('hdr-user-email');
+const _IDENTITY = 'https://majestic-maamoul-22e146.netlify.app/.netlify/identity';
 
-  function showGate()  { gate.style.display = 'flex'; }
-  function hideGate(user) {
-    gate.style.display = 'none';
-    if (user?.email) {
-      emailEl.textContent = user.email;
-      userEl.style.display = 'flex';
+function authTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('auth-login-form').style.display  = isLogin ? 'block' : 'none';
+  document.getElementById('auth-signup-form').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('tab-login-btn').style.background  = isLogin ? '#10b981' : 'transparent';
+  document.getElementById('tab-login-btn').style.color       = isLogin ? '#000' : '#64748b';
+  document.getElementById('tab-signup-btn').style.background = isLogin ? 'transparent' : '#10b981';
+  document.getElementById('tab-signup-btn').style.color      = isLogin ? '#64748b' : '#000';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+function authMsg(text, ok) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.style.color = ok ? '#10b981' : '#ef4444';
+}
+
+async function doLogin() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if (!email || !password) { authMsg('Enter your email and password.'); return; }
+  authMsg('Signing in…', true);
+  try {
+    const r = await fetch(_IDENTITY + '/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=password&username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+    });
+    const d = await r.json();
+    if (d.access_token) {
+      localStorage.setItem('ae_token', d.access_token);
+      localStorage.setItem('ae_user',  d.email || email);
+      authSuccess(d.email || email);
+    } else {
+      authMsg(d.error_description || 'Incorrect email or password.');
     }
-  }
+  } catch(e) { authMsg('Connection error — try again.'); }
+}
 
-  if (_IS_LOCAL) {
-    // Running locally — skip auth entirely
-    hideGate({ email: 'local dev' });
+async function doSignup() {
+  const email    = document.getElementById('auth-su-email').value.trim();
+  const password = document.getElementById('auth-su-password').value;
+  if (!email || !password) { authMsg('Fill in both fields.'); return; }
+  if (password.length < 8)  { authMsg('Password must be at least 8 characters.'); return; }
+  authMsg('Creating account…', true);
+  try {
+    const r = await fetch(_IDENTITY + '/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if (d.id || d.email) {
+      // Auto-login right after signup (no email confirmation needed for now)
+      document.getElementById('auth-email').value    = email;
+      document.getElementById('auth-password').value = password;
+      authTab('login');
+      authMsg('Account created! Signing you in…', true);
+      setTimeout(doLogin, 800);
+    } else {
+      authMsg(d.msg || d.error_description || 'Signup failed — try a different email.');
+    }
+  } catch(e) { authMsg('Connection error — try again.'); }
+}
+
+function doLogout() {
+  localStorage.removeItem('ae_token');
+  localStorage.removeItem('ae_user');
+  document.getElementById('hdr-user').style.display = 'none';
+  document.getElementById('auth-gate').style.display = 'flex';
+}
+
+function authSuccess(email) {
+  document.getElementById('auth-gate').style.display = 'none';
+  const userEl  = document.getElementById('hdr-user');
+  const emailEl = document.getElementById('hdr-user-email');
+  if (email) { emailEl.textContent = email; userEl.style.display = 'flex'; }
+}
+
+// ── Boot: check for existing session ─────────────────────────────
+(function setupAuth() {
+  if (_IS_LOCAL) { init(); return; } // skip auth when developing locally
+
+  const token = localStorage.getItem('ae_token');
+  const email = localStorage.getItem('ae_user');
+  if (token) {
+    authSuccess(email);
     init();
-    return;
+  } else {
+    document.getElementById('auth-gate').style.display = 'flex';
   }
-
-  if (!window.netlifyIdentity) {
-    // Widget not loaded (shouldn't happen on Netlify, but skip auth if so)
-    hideGate({});
-    init();
-    return;
-  }
-
-  showGate(); // hidden until identity confirms a session
-
-  netlifyIdentity.on('init', user => {
-    if (user) { hideGate(user); init(); }
-    else showGate();
-  });
-
-  netlifyIdentity.on('login', user => {
-    hideGate(user);
-    netlifyIdentity.close();
-    init();
-  });
-
-  netlifyIdentity.on('logout', () => {
-    userEl.style.display = 'none';
-    showGate();
-  });
-
-  netlifyIdentity.init({ APIUrl: 'https://majestic-maamoul-22e146.netlify.app/.netlify/identity' });
 })();
 
 // ═══════════════════════════════════════════════════════════════════
