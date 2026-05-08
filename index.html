@@ -1175,15 +1175,15 @@ async function fetchCrypto() {
   const ids = CRYPTO_IDS.join(',');
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=20&sparkline=true&price_change_percentage=1h,24h,7d,30d`;
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (res.status === 429) { fetchCrypto._backoff = (fetchCrypto._backoff || 90) * 2; throw new Error('Rate limited'); }
+  fetchCrypto._backoff = 90;
   if (!res.ok) throw new Error('CoinGecko error ' + res.status);
   cryptoData = await res.json();
   saveCache('crypto', cryptoData);
-  // Compute RSI from sparkline for each coin
-  cryptoData.forEach(c => {
-    const sp = c.sparkline_in_7d?.price || [];
-    rsiCache['CRYPTO_' + c.id] = calcRSI(sp);
-  });
-  renderCrypto();
+  renderCrypto(); // render immediately with whatever RSI we have
+  // Compute RSI off the critical path — runs when browser is idle
+  const computeRSI = () => cryptoData.forEach(c => { rsiCache['CRYPTO_' + c.id] = calcRSI(c.sparkline_in_7d?.price || []); });
+  (window.requestIdleCallback || setTimeout)(computeRSI);
 }
 
 async function fetchStockQuote(symbol) {
@@ -1276,27 +1276,24 @@ async function runDeepAnalysis() {
   Object.assign(sentimentCache, sentiment);
   setStep('News Sentiment', 'done');
 
-  // Step 2: RSI for top 5 stocks (5 calls)
+  // Step 2: RSI for top 5 stocks — all in parallel
   document.getElementById('da-sub').textContent = 'Step 2/3: Fetching RSI for top stocks...';
-
-  for (const sym of topStocks) {
-    setStep('RSI x5', 'loading');
+  setStep('RSI x5', 'loading');
+  await Promise.all(topStocks.map(async sym => {
     const rsi = await fetchAVRSI(sym);
     if (rsi !== null) rsiCache[sym] = rsi;
-    await new Promise(r => setTimeout(r, 300));
-  }
+  }));
   setStep('RSI x5', 'done');
 
-  // Step 3: Fundamentals overview for top 5 (5 calls)
+  // Step 3: Fundamentals overview for top 5 — all in parallel
   document.getElementById('da-sub').textContent = 'Step 3/3: Fetching company fundamentals...';
-  for (const sym of topStocks) {
+  await Promise.all(topStocks.map(async sym => {
     const stepKey = sym + ' OV';
     setStep(stepKey, 'loading');
     const ov = await fetchAVOverview(sym);
     if (ov) overviewCache[sym] = ov;
-    await new Promise(r => setTimeout(r, 300));
     setStep(stepKey, 'done');
-  }
+  }));
 
   document.getElementById('da-sub').textContent = '✓ Deep analysis complete — rendering strategy section...';
   deepAnalysisDone = true;
@@ -1410,15 +1407,23 @@ async function renderStocks() {
     grid.appendChild(el);
   });
 
-  // Phase 2 — fetch all quotes in parallel (5s timeout each), update each card as data arrives
+  // Phase 2 — fetch all quotes in parallel, batch DOM writes via rAF to avoid layout thrash
+  const pendingUpdates = {};
   await Promise.all(symbols.map(async sym => {
     const manual = STOCK_DATA[sym];
     const live = await fetchStockQuote(sym);
     const liveRSI = rsiCache[sym] ?? null;
     const s = scoreStock(manual, live ? live.change : null, liveRSI);
     stockScores[sym] = { s, manual, live };
-    const card = document.getElementById('sc-' + sym);
-    if (card) card.innerHTML = buildStockCardHtml(sym, s, manual, live);
+    pendingUpdates[sym] = buildStockCardHtml(sym, s, manual, live);
+  }));
+  // Write all cards in a single animation frame — one reflow instead of N
+  await new Promise(resolve => requestAnimationFrame(() => {
+    Object.entries(pendingUpdates).forEach(([sym, html]) => {
+      const card = document.getElementById('sc-' + sym);
+      if (card) card.innerHTML = html;
+    });
+    resolve();
   }));
 
   // Phase 3 — re-sort cards into score order by moving DOM nodes (no re-render)
@@ -1694,8 +1699,7 @@ async function refreshAll() {
   btn.classList.add('spinning');
   document.getElementById('hdr-updated').textContent = 'Loading...';
   try {
-    await Promise.all([fetchGlobal(), fetchCrypto()]);
-    await renderStocks();
+    await Promise.all([fetchGlobal(), fetchCrypto(), renderStocks()]);
     document.getElementById('hdr-updated').textContent = new Date().toLocaleTimeString();
     showToast('Data refreshed ✓');
     // Re-run deep analysis at most once per 30 minutes to protect AV API quota
@@ -2742,7 +2746,8 @@ function renderNewsFeed(items) {
       col.innerHTML = `<div class="news-empty">No articles yet.<br>Try refreshing.</div>`;
       return;
     }
-    col.innerHTML = arts.map(buildCard).join('');
+    // Cap at 25 per column — keeps DOM lean; feed refreshes every 4 min anyway
+    col.innerHTML = arts.slice(0, 25).map(buildCard).join('');
   });
 }
 
@@ -2785,21 +2790,25 @@ async function fetchRSSFeed(src) {
   const cutoff = Date.now() - SEVEN_DAYS_MS;
   let rawItems = null;
 
-  // ── Method 1: direct CORS proxies (fast, no rate limits) ─────────
-  for (const proxy of [
+  // ── Method 1: race all CORS proxies simultaneously — fastest wins ─
+  const proxies = [
     'https://corsproxy.io/?url=',
     'https://api.allorigins.win/raw?url=',
     'https://thingproxy.freeboard.io/fetch/',
-  ]) {
-    try {
-      const r = await fetch(proxy + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
-      if (!r.ok) continue;
+  ];
+  try {
+    const encoded = encodeURIComponent(url);
+    const result = await Promise.any(proxies.map(async proxy => {
+      const r = await fetch(proxy + encoded, { signal: AbortSignal.timeout(4000) });
+      if (!r.ok) throw new Error('not ok');
       const t = await r.text();
-      if (!t || (!t.includes('<item') && !t.includes('<entry'))) continue;
+      if (!t || (!t.includes('<item') && !t.includes('<entry'))) throw new Error('no items');
       const items = parseRSSXml(t, fallbackName);
-      if (items.length) { rawItems = items; break; }
-    } catch(_) {}
-  }
+      if (!items.length) throw new Error('empty');
+      return items;
+    }));
+    rawItems = result;
+  } catch(_) {}
 
   // ── Method 2: rss2json API (server-side, bypasses CORS entirely) ──
   if (!rawItems) {
@@ -2902,7 +2911,7 @@ async function fetchMacroNews(manual = false) {
     return new Date(b.date) - new Date(a.date);
   });
 
-  renderNewsFeed(all.slice(0, 300));
+  renderNewsFeed(all.slice(0, 150));
   if (manual) showToast(`Feed updated — ${all.length} articles across 3 columns`);
 }
 </script>
