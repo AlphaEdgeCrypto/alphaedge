@@ -2,10 +2,20 @@
   publish = "."
   functions = "netlify/functions"
 
-# Clean URL for the AV proxy
+# Clean URLs for serverless functions
 [[redirects]]
   from = "/api/av"
   to   = "/.netlify/functions/av"
+  status = 200
+
+[[redirects]]
+  from = "/api/user-count"
+  to   = "/.netlify/functions/user-count"
+  status = 200
+
+[[redirects]]
+  from = "/api/increment-count"
+  to   = "/.netlify/functions/increment-count"
   status = 200
 
 # Security headers
