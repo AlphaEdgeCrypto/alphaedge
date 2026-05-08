@@ -1,7 +1,7 @@
 // Fetches real user count from Netlify Identity admin API
 // Requires NETLIFY_API_TOKEN env var (Netlify user settings → Personal access tokens)
 exports.handler = async () => {
-  const token = process.env.NETLIFY_API_TOKEN;
+  const token = process.env.NETLIFY_API_TOKEN || process.env.Netlify_API_TOKEN || process.env.netlify_api_token;
   if (!token) {
     return { statusCode: 200, body: JSON.stringify({ count: 0, reason: 'no_token' }) };
   }
