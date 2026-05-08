@@ -1,0 +1,2820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaEdge — Smart Investment Signals</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg: #000000; --bg2: #0d0d0d; --card: #141414; --card2: #1c1c1c;
+      --border: #272727; --border2: #333333;
+      --text: #e2e8f0; --muted: #64748b; --dim: #94a3b8;
+      --green: #10b981; --red: #ef4444; --yellow: #f59e0b;
+      --accent: #10b981; --purple: #8b5cf6; --cyan: #06b6d4; --orange: #f97316;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+    a { color: var(--cyan); text-decoration: none; }
+
+    .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #10b981, #06b6d4); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; }
+    .logo-text { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #10b981, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .header-meta { display: flex; align-items: center; gap: 20px; }
+    .header-stat { text-align: center; }
+    .header-stat-val { font-size: 15px; font-weight: 700; }
+    .header-stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn { border: none; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-weight: 600; transition: all 0.2s; }
+    .btn-ghost { background: var(--card2); border: 1px solid var(--border2); color: var(--dim); }
+    .btn-ghost:hover { background: var(--border); color: var(--text); }
+    .btn-primary { background: var(--green); color: #000; }
+    .btn-primary:hover { background: #059669; }
+    .btn-success { background: #064e3b; color: var(--green); border: 1px solid #065f46; }
+    .btn-success:hover { background: #065f46; }
+    .btn.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .disclaimer { background: #1a1200; border-bottom: 1px solid #3d2c00; padding: 8px 24px; font-size: 11px; color: #92680a; display: flex; align-items: center; gap: 8px; }
+    .api-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+    .api-status.ok   { background: #052e16; color: var(--green); }
+    .api-status.none { background: #1a1200; color: var(--yellow); }
+
+    .main { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    .col-span-2 { grid-column: span 2; }
+    @media (max-width: 1200px) { .grid-3 { grid-template-columns: 1fr 1fr; } .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 768px) { .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; } .main { padding: 12px; } }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+    .card-badge { font-size: 10px; background: var(--card2); border: 1px solid var(--border2); padding: 2px 6px; border-radius: 4px; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+    .sig { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; }
+    .sig-sb { background: #052e16; color: #34d399; border: 1px solid #064e3b; }
+    .sig-b  { background: #0c2011; color: #6ee7b7; border: 1px solid #065f46; }
+    .sig-h  { background: #1a1200; color: #fbbf24; border: 1px solid #3d2c00; }
+    .sig-a  { background: #2a0a0a; color: #f87171; border: 1px solid #450a0a; }
+
+    .score-ring { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+    .score-ring::before { content: ''; position: absolute; inset: 4px; background: var(--card); border-radius: 50%; z-index: 1; }
+    .score-num { position: relative; z-index: 2; font-size: 17px; font-weight: 800; }
+    .score-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-top: 2px; }
+
+    .score-bar-wrap { margin-bottom: 6px; }
+    .score-bar-header { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 11px; color: var(--dim); }
+    .score-bar-track { height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; }
+
+    .asset-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; transition: border-color 0.2s; }
+    .asset-card:hover { border-color: var(--border2); }
+    .asset-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .asset-info { display: flex; align-items: center; gap: 10px; }
+    .asset-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
+    .asset-name { font-size: 14px; font-weight: 700; }
+    .asset-sym { font-size: 11px; color: var(--muted); }
+    .asset-price { text-align: right; }
+    .asset-price-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .asset-price-chg { font-size: 12px; font-weight: 600; }
+    .up { color: var(--green); } .dn { color: var(--red); }
+    .asset-mid { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .asset-thesis { font-size: 11px; color: var(--dim); line-height: 1.5; margin-bottom: 10px; border-left: 2px solid var(--border2); padding-left: 8px; }
+    .asset-scores { display: flex; flex-direction: column; gap: 4px; }
+
+    .pick-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .pick-row:last-child { border-bottom: none; }
+    .pick-rank { font-size: 18px; font-weight: 900; color: var(--muted); width: 24px; flex-shrink: 0; }
+    .pick-rank.top { color: var(--yellow); }
+    .pick-body { flex: 1; min-width: 0; }
+    .pick-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pick-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .pick-bar { width: 80px; height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .pick-bar-fill { height: 100%; border-radius: 3px; }
+    .pick-score { font-size: 22px; font-weight: 900; }
+
+    .macro-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .macro-row:last-child { border-bottom: none; }
+    .macro-label { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+    .macro-val { font-size: 13px; font-weight: 700; }
+    .macro-context { font-size: 10px; color: var(--muted); margin-top: 2px; text-align: right; }
+    .indicator-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: var(--green); } .dot-yellow { background: var(--yellow); } .dot-red { background: var(--red); }
+
+    .catalyst-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .catalyst-row:last-child { border-bottom: none; }
+    .catalyst-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .catalyst-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+    .tag-bullish { background: #052e16; color: #34d399; }
+    .tag-watch   { background: #1a1200; color: #fbbf24; }
+    .tag-risk    { background: #2a0a0a; color: #f87171; }
+    .catalyst-title { font-size: 13px; font-weight: 600; }
+    .catalyst-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
+    .catalyst-assets { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .asset-tag { font-size: 10px; background: var(--card2); border: 1px solid var(--border2); padding: 1px 5px; border-radius: 3px; color: var(--dim); }
+
+    .ov-item { background: var(--bg2); border-radius: 8px; padding: 10px 12px; }
+    .ov-val { font-size: 18px; font-weight: 800; }
+    .ov-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .ov-chg { font-size: 11px; font-weight: 600; margin-top: 2px; }
+
+    /* ── STRATEGY SECTION ── */
+    .strategy-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 10px; }
+    .strategy-desc { font-size: 12px; color: var(--dim); margin-bottom: 14px; line-height: 1.6; background: var(--bg2); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--border2); }
+
+    .si { border-bottom: 1px solid var(--border); padding: 14px 0; }
+    .si:first-child { padding-top: 4px; }
+    .si:last-child { border-bottom: none; padding-bottom: 4px; }
+    .si-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .si-rank { font-size: 20px; font-weight: 900; color: var(--muted); width: 26px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
+    .si-rank.gold { color: #fbbf24; } .si-rank.silver { color: #94a3b8; } .si-rank.bronze { color: #f97316; }
+    .si-body { flex: 1; min-width: 0; }
+    .si-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+    .si-sub { font-size: 11px; color: var(--muted); }
+    .si-score-block { text-align: right; flex-shrink: 0; }
+    .si-score { font-size: 26px; font-weight: 900; line-height: 1; }
+    .si-score-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .metric-pills { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+    .pill { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px; white-space: nowrap; }
+    .pill-blue   { background: #052e1c; color: #34d399; border: 1px solid #065f46; }
+    .pill-green  { background: #052e16; color: #34d399; border: 1px solid #064e3b; }
+    .pill-yellow { background: #1a1200; color: #fbbf24; border: 1px solid #3d2c00; }
+    .pill-red    { background: #2a0a0a; color: #f87171; border: 1px solid #450a0a; }
+    .pill-gray   { background: var(--card2); color: var(--dim); border: 1px solid var(--border2); }
+    .pill-purple { background: #1a0c2e; color: #c084fc; border: 1px solid #3b1f5e; }
+
+    .si-note { font-size: 11px; color: var(--dim); line-height: 1.55; margin-bottom: 8px; border-left: 2px solid var(--border2); padding-left: 8px; }
+    .si-strategy { font-size: 11px; background: var(--bg2); border-radius: 6px; padding: 7px 10px; line-height: 1.6; color: var(--dim); }
+    .si-strategy strong { color: var(--text); }
+    .si-horizon-risk { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+    .risk-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .risk-low   { background: #052e16; color: #34d399; }
+    .risk-med   { background: #1a1200; color: #fbbf24; }
+    .risk-high  { background: #2a0a0a; color: #f87171; }
+    .risk-vhigh { background: #3d0505; color: #fca5a5; }
+
+    .deep-analysis-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card); border: 1px solid var(--border2); border-radius: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .da-text { flex: 1; min-width: 200px; }
+    .da-title { font-size: 13px; font-weight: 700; color: var(--green); margin-bottom: 2px; }
+    .da-sub { font-size: 11px; color: var(--dim); }
+    .da-status { font-size: 11px; color: var(--muted); }
+    .da-progress { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .da-step { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+    .da-step.done    { background: #052e16; color: #34d399; }
+    .da-step.loading { background: #1a1200; color: #fbbf24; animation: pulse 1.2s ease-in-out infinite; }
+    .da-step.pending { background: var(--card2); color: var(--muted); }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .section-title::before { content: ''; display: inline-block; width: 3px; height: 18px; background: linear-gradient(180deg, var(--green), var(--cyan)); border-radius: 2px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+    .chip-crypto { background: #052e1c; color: #34d399; border: 1px solid #065f46; }
+    .chip-stock  { background: #1a0c2e; color: #c084fc; border: 1px solid #3b1f5e; }
+
+    .method-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    @media (max-width: 900px) { .method-grid { grid-template-columns: 1fr 1fr; } }
+    .method-item { background: var(--bg2); border-radius: 8px; padding: 12px; border-left: 3px solid; }
+    .method-item-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .method-item-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
+    .method-weight { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+
+    .skeleton { background: linear-gradient(90deg, var(--card) 25%, var(--card2) 50%, var(--card) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .loading-card { height: 180px; }
+
+    #toast { position: fixed; bottom: 20px; right: 20px; background: var(--card2); border: 1px solid var(--border2); padding: 10px 16px; border-radius: 8px; font-size: 12px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 320px; }
+    #toast.show { opacity: 1; }
+    footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 16px 24px; margin-top: 24px; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.7; }
+
+    /* ── PAGE NAVIGATION ── */
+    .page-nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; position: sticky; top: 57px; z-index: 99; overflow-x: auto; scrollbar-width: none; }
+    .page-nav::-webkit-scrollbar { display: none; }
+    .page-tab { background: none; border: none; border-bottom: 3px solid transparent; color: var(--muted); font-size: 13px; font-weight: 600; padding: 12px 22px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .page-tab:hover { color: var(--text); }
+    .page-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .rsi-gauge { display: inline-flex; align-items: center; gap: 4px; }
+    .rsi-bar { width: 60px; height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+    .rsi-fill { height: 100%; border-radius: 3px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+    .text-green { color: var(--green); } .text-yellow { color: var(--yellow); } .text-red { color: var(--red); } .text-cyan { color: var(--cyan); } .text-dim { color: var(--dim); }
+
+    /* ── LIVE CHART SECTION ── */
+    .live-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .live-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .live-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; }
+    .live-dot.streaming { background: var(--green); animation: livePulse 1.4s ease-in-out infinite; }
+    @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+    .asset-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+    .asset-tab { padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border2); background: var(--bg2); color: var(--dim); transition: all .15s; white-space: nowrap; }
+    .asset-tab:hover { background: var(--card2); color: var(--text); }
+    .asset-tab.active { background: var(--green); color: #000; border-color: var(--green); }
+    .asset-tab.active.crypto-tab { background: #052e1c; color: #34d399; border-color: #065f46; }
+    .asset-tab.active.stock-tab  { background: #2e1f4e; color: #c084fc; border-color: #4c2d7a; }
+    .interval-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .interval-btn { padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border2); background: var(--bg2); color: var(--muted); transition: all .15s; }
+    .interval-btn:hover { color: var(--text); }
+    .interval-btn.active { background: var(--card2); color: var(--text); border-color: var(--dim); }
+    .chart-layout { display: grid; grid-template-columns: 1fr 260px; gap: 12px; }
+    @media (max-width: 960px) { .chart-layout { grid-template-columns: 1fr; } }
+    .chart-panes { display: flex; flex-direction: column; }
+    #price-chart  { height: 320px; border-radius: 6px; overflow: hidden; }
+    #rsi-chart    { height: 85px;  border-radius: 6px; overflow: hidden; margin-top: 2px; }
+    #macd-chart   { height: 85px;  border-radius: 6px; overflow: hidden; margin-top: 2px; }
+    .ohlcv-bar { display: flex; gap: 14px; padding: 6px 4px; font-size: 11px; color: var(--muted); flex-wrap: wrap; border-top: 1px solid var(--border); margin-top: 4px; }
+    .ohlcv-bar span strong { color: var(--text); }
+    .chart-sidebar { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 502px; }
+    .sidebar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+    .sidebar-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; }
+    .confluence-score { font-size: 32px; font-weight: 900; text-align: center; line-height: 1; }
+    .confluence-label { text-align: center; margin-top: 4px; margin-bottom: 8px; }
+    .signal-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+    .signal-row:last-child { border-bottom: none; }
+    .signal-ind { color: var(--dim); }
+    .signal-val { text-align: right; }
+    .signal-type { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+    .st-buy  { background:#052e16; color:#34d399; }
+    .st-sell { background:#2a0a0a; color:#f87171; }
+    .st-neut { background:#1a1200; color:#fbbf24; }
+    .oc-row  { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+    .oc-row:last-child { border-bottom: none; }
+    .oc-label { color: var(--muted); }
+    .oc-val   { font-weight: 700; }
+    .price-display { text-align: center; padding: 6px 0; }
+    .price-big { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .price-chg { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+    /* ── NEWS FEED ── */
+    /* ── 3-COLUMN NEWS GRID ── */
+    .news-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 1100px) { .news-3col { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px)  { .news-3col { grid-template-columns: 1fr; } }
+    .ncol { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .ncol-head { padding: 12px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .ncol-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 7px; }
+    .ncol-count { font-size: 10px; background: var(--card2); border: 1px solid var(--border2); padding: 2px 7px; border-radius: 4px; color: var(--muted); font-weight: 600; }
+    .ncol-body { flex: 1; overflow-y: auto; max-height: 72vh; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+    .ncol-body::-webkit-scrollbar { width: 3px; }
+    .ncol-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    /* Tweet-style article card */
+    .ncard { padding: 12px 14px; border-bottom: 1px solid var(--border); transition: background .12s; }
+    .ncard:last-child { border-bottom: none; }
+    .ncard:hover { background: var(--bg2); }
+    .ncard-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    .ncard-source { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .ncard-time { font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .ncard-headline { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.42; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ncard-excerpt { font-size: 11px; color: var(--dim); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 7px; }
+    .ncard-footer { display: flex; align-items: center; justify-content: space-between; }
+    .ncard-sent { display: flex; align-items: center; gap: 4px; }
+    .ncard-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .ncard-read { font-size: 10px; color: var(--cyan); text-decoration: none; opacity: 0.7; font-weight: 600; }
+    .ncard-read:hover { opacity: 1; }
+    .ncard-upcoming { font-size: 9px; font-weight: 800; background: #1a0c2e; color: #c084fc; border: 1px solid #4c1d95; padding: 1px 5px; border-radius: 3px; }
+    .news-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 12px; }
+    .news-loading { display: flex; flex-direction: column; gap: 10px; padding: 10px; }
+    .news-skel { height: 75px; border-radius: 6px; }
+    .news-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: livePulse 2s ease-in-out infinite; }
+    .cal-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+    .cal-strip::-webkit-scrollbar { height: 3px; }
+    .cal-strip::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .cal-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-width: 170px; max-width: 170px; flex-shrink: 0; }
+    .cal-card.impact-high { border-left: 3px solid var(--red); }
+    .cal-card.impact-med  { border-left: 3px solid var(--yellow); }
+    .cal-card.impact-low  { border-left: 3px solid var(--border2); }
+    .cal-when  { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+    .cal-title { font-size: 11px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 4px; }
+    .cal-meta  { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); }
+    .cal-flag  { font-size: 13px; }
+    .cal-forecast-val { color: var(--yellow); font-weight: 700; }
+  </style>
+<!-- Netlify Identity widget (handles login/signup modal automatically) -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body>
+
+<!-- ══ AUTH GATE — shown until user is signed in ══════════════════ -->
+<div id="auth-gate" style="display:none;position:fixed;inset:0;background:#0a0b0f;z-index:9999;flex-direction:column;align-items:center;justify-content:center">
+  <div style="text-align:center;max-width:400px;padding:48px 32px;background:#111318;border:1px solid #1e2130;border-radius:16px;box-shadow:0 24px 80px #000">
+    <div style="font-size:40px;font-weight:900;letter-spacing:-1px;color:#10b981;margin-bottom:6px">α AlphaEdge</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:36px">Investment Signal Dashboard — Private Access</div>
+    <button onclick="netlifyIdentity.open()" style="width:100%;padding:14px;background:#10b981;color:#000;border:none;border-radius:8px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0.3px">Sign In / Create Account</button>
+    <p style="font-size:11px;color:#475569;margin-top:20px;line-height:1.6">Free account · No credit card · Takes 30 seconds</p>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">α</div>
+    <div>
+      <div class="logo-text">AlphaEdge</div>
+      <div class="logo-sub">Investment Signal Dashboard</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="header-stat">
+      <div class="header-stat-val" id="hdr-mcap">—</div>
+      <div class="header-stat-lbl">Crypto Mkt Cap</div>
+    </div>
+    <div class="header-stat">
+      <div class="header-stat-val" id="hdr-btcd">—</div>
+      <div class="header-stat-lbl">BTC Dominance</div>
+    </div>
+    <div class="header-stat">
+      <div class="header-stat-val" id="hdr-updated">—</div>
+      <div class="header-stat-lbl">Last Updated</div>
+    </div>
+    <button class="btn btn-ghost" id="refresh-btn" onclick="refreshAll()">
+      <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Refresh
+    </button>
+    <div id="hdr-user" style="display:none;align-items:center;gap:10px;border-left:1px solid var(--border);padding-left:14px">
+      <span id="hdr-user-email" style="font-size:11px;color:var(--muted)"></span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 9px" onclick="netlifyIdentity.logout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  ⚠️ <strong>Educational only.</strong> AlphaEdge signals are algorithmic and informational — not financial advice. Always do your own research and consult a licensed financial advisor. Past performance does not indicate future results.
+</div>
+
+
+<div class="page-nav">
+  <button class="page-tab active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+  <button class="page-tab" data-page="charts"    onclick="showPage('charts',this)">📈 Charts</button>
+  <button class="page-tab" data-page="strategy"  onclick="showPage('strategy',this)">⚡ Strategy</button>
+  <button class="page-tab" data-page="news"      onclick="showPage('news',this)">📰 News & Policy</button>
+</div>
+
+<div class="main">
+
+  <!-- ═══ PAGE: DASHBOARD ═══ -->
+  <div id="page-dashboard" class="page active">
+
+    <!-- OVERVIEW ROW -->
+    <div class="grid-4" style="margin-bottom:16px">
+      <div class="card ov-item"><div class="ov-val" id="ov-mcap">—</div><div class="ov-lbl">Total Crypto Market Cap</div><div class="ov-chg" id="ov-mcap-chg">—</div></div>
+      <div class="card ov-item"><div class="ov-val" id="ov-vol">—</div><div class="ov-lbl">24h Total Volume</div><div class="ov-chg" id="ov-vol-note">—</div></div>
+      <div class="card ov-item"><div class="ov-val" id="ov-btcd">—</div><div class="ov-lbl">BTC Dominance</div><div class="ov-chg" id="ov-btcd-note">—</div></div>
+      <div class="card ov-item"><div class="ov-val" id="ov-fg">—</div><div class="ov-lbl">Market Sentiment</div><div class="ov-chg" id="ov-fg-lbl">—</div></div>
+    </div>
+
+    <!-- TOP PICKS + MACRO -->
+    <div class="grid-3">
+      <div class="card col-span-2">
+        <div class="card-header">
+          <div class="card-title">🏆 Top Picks Today <span class="card-badge">RANKED BY OVERALL SCORE</span></div>
+        </div>
+        <div id="top-picks-list"><div class="skeleton loading-card"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🌍 Macro Environment</div>
+          <div class="card-badge">May 2025</div>
+        </div>
+        <div id="macro-panel"></div>
+      </div>
+    </div>
+
+    <!-- CRYPTO -->
+    <div class="section-title">Cryptocurrency Analysis <span class="chip chip-crypto">Live · CoinGecko</span></div>
+    <div class="grid-4" id="crypto-grid"><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div></div>
+
+    <!-- STOCKS -->
+    <div class="section-title">Equities Analysis <span class="chip chip-stock">Fundamentals + Live Quote</span></div>
+    <div class="grid-4" id="stock-grid"><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div><div class="skeleton loading-card"></div></div>
+
+    <!-- CATALYSTS + METHODOLOGY -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚡ Key Market Catalysts</div>
+          <div class="card-badge">Current</div>
+        </div>
+        <div id="catalysts-panel"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📐 Scoring Methodology</div>
+        </div>
+        <div id="method-panel"></div>
+      </div>
+    </div>
+
+  </div><!-- /page-dashboard -->
+
+  <!-- ═══ PAGE: CHARTS ═══ -->
+  <div id="page-charts" class="page">
+
+    <div class="live-section">
+      <div class="live-header">
+        <div class="live-title">
+          <div class="live-dot" id="live-dot"></div>
+          Live Chart Analysis
+          <span id="live-status" style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">Select an asset below</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:10px;color:var(--muted)">Interval:</span>
+          <div class="interval-row" style="margin:0">
+            <button class="interval-btn" onclick="setInterval_('1m',event)">1m</button>
+            <button class="interval-btn" onclick="setInterval_('5m',event)">5m</button>
+            <button class="interval-btn active" onclick="setInterval_('15m',event)">15m</button>
+            <button class="interval-btn" onclick="setInterval_('1h',event)">1h</button>
+            <button class="interval-btn" onclick="setInterval_('4h',event)">4h</button>
+            <button class="interval-btn" onclick="setInterval_('1d',event)">1D</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSET TABS -->
+      <div style="margin-bottom:8px;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Crypto</div>
+      <div class="asset-tabs" id="crypto-tabs"></div>
+      <div style="margin:8px 0 6px;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Stocks</div>
+      <div class="asset-tabs" id="stock-tabs"></div>
+
+      <!-- ANALYSIS PARAGRAPH -->
+      <div id="analysis-box" style="display:none;margin-bottom:12px;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--yellow);margin-bottom:6px">⚡ Short-Term Read</div>
+          <p id="analysis-st" style="font-size:12px;color:var(--dim);line-height:1.65;margin:0">—</p>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--cyan);margin-bottom:6px">🏦 Long-Term Read</div>
+          <p id="analysis-lt" style="font-size:12px;color:var(--dim);line-height:1.65;margin:0">—</p>
+        </div>
+      </div>
+
+      <!-- CHART + SIDEBAR -->
+      <div class="chart-layout">
+        <div class="chart-panes">
+          <div id="price-chart"></div>
+          <div id="rsi-chart"></div>
+          <div id="macd-chart"></div>
+          <div class="ohlcv-bar" id="ohlcv-bar">
+            <span><strong>O</strong> —</span><span><strong>H</strong> —</span>
+            <span><strong>L</strong> —</span><span><strong>C</strong> —</span>
+            <span><strong>Vol</strong> —</span>
+          </div>
+        </div>
+        <div class="chart-sidebar">
+          <div class="sidebar-card">
+            <div class="price-display">
+              <div class="price-big" id="sb-price">—</div>
+              <div class="price-chg" id="sb-chg">—</div>
+            </div>
+          </div>
+          <div class="sidebar-card">
+            <div class="sidebar-title">Signal Confluence</div>
+            <div class="confluence-score" id="conf-score">—</div>
+            <div class="confluence-label" id="conf-label"></div>
+            <div id="signal-rows"></div>
+          </div>
+          <div class="sidebar-card" id="onchain-card">
+            <div class="sidebar-title">Derivatives / On-Chain</div>
+            <div id="onchain-rows"><div style="font-size:11px;color:var(--muted)">Load a crypto asset to see funding rate, open interest and long/short ratio.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-charts -->
+
+  <!-- ═══ PAGE: STRATEGY ═══ -->
+  <div id="page-strategy" class="page">
+
+    <div class="strategy-header">
+      <div class="section-title" style="margin-bottom:0">⚡ Short-Term Plays vs 🏦 Long-Term Holds</div>
+      <button class="btn btn-success" id="deep-btn" onclick="runDeepAnalysis()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Run Deep Analysis
+      </button>
+    </div>
+    <div class="strategy-desc">
+      <strong>Short-Term (&lt;2 weeks)</strong>: Driven by RSI (oversold/overbought), live news sentiment, 24h–7d price momentum, volume surges, and near-term catalysts (earnings, Fed decisions, product launches).
+      &nbsp;|&nbsp;
+      <strong>Long-Term (3–6+ months)</strong>: Driven by P/E ratio, revenue growth, profit margins, competitive moat, innovation pipeline, macro trajectory, and regulatory tailwinds. Deep Analysis fetches live RSI, company fundamentals, and news sentiment from Alpha Vantage (uses ~13 API calls).
+    </div>
+    <div class="deep-analysis-bar" id="da-bar" style="display:none">
+      <div class="da-text">
+        <div class="da-title">🔬 Deep Analysis Running</div>
+        <div class="da-sub" id="da-sub">Fetching RSI, news sentiment, and company fundamentals...</div>
+      </div>
+      <div class="da-progress" id="da-progress"></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚡ Short-Term Plays <span class="card-badge">&lt; 2 WEEKS</span></div>
+          <div id="st-badge"></div>
+        </div>
+        <div id="st-panel"><div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Loading market data... then click <strong style="color:var(--green)">Run Deep Analysis</strong> for RSI &amp; sentiment signals.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏦 Long-Term Holds <span class="card-badge">3–6+ MONTHS</span></div>
+          <div id="lt-badge"></div>
+        </div>
+        <div id="lt-panel"><div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Loading... click <strong style="color:var(--green)">Run Deep Analysis</strong> to fetch company fundamentals &amp; analyst targets.</div></div>
+      </div>
+    </div>
+
+  </div><!-- /page-strategy -->
+
+  <!-- ═══ PAGE: NEWS & POLICY ═══ -->
+  <div id="page-news" class="page">
+
+    <div id="cal-strip-wrap" style="display:none;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px">📅 High-Impact Events — This Week &amp; Next</div>
+      <div class="cal-strip" id="cal-strip"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="font-size:13px">
+        <span class="news-live-dot"></span>
+        Live Intelligence Feed
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="fetchMacroNews(true)">↻ Refresh</button>
+    </div>
+
+    <div class="news-3col">
+
+      <!-- Column 1: Crypto Market -->
+      <div class="ncol">
+        <div class="ncol-head">
+          <div class="ncol-title"><span>🚨</span> Crypto Market</div>
+          <span class="ncol-count" id="nc-crypto-count">—</span>
+        </div>
+        <div class="ncol-body" id="nc-crypto">
+          <div class="news-loading">
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Policy & Regulation -->
+      <div class="ncol">
+        <div class="ncol-head">
+          <div class="ncol-title"><span>🏛️</span> Policy &amp; Regulation</div>
+          <span class="ncol-count" id="nc-policy-count">—</span>
+        </div>
+        <div class="ncol-body" id="nc-policy">
+          <div class="news-loading">
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Macro & Markets -->
+      <div class="ncol">
+        <div class="ncol-head">
+          <div class="ncol-title"><span>🌍</span> Macro &amp; Markets</div>
+          <span class="ncol-count" id="nc-macro-count">—</span>
+        </div>
+        <div class="ncol-body" id="nc-macro">
+          <div class="news-loading">
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+            <div class="skeleton news-skel"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /news-3col -->
+
+  </div><!-- /page-news -->
+
+</div>
+
+<footer>
+  AlphaEdge uses <strong>CoinGecko API</strong> (crypto market data) · <strong>Alpha Vantage</strong> (stock quotes, RSI, news sentiment, company fundamentals)<br>
+  Short-term signals use live RSI, AI-aggregated news sentiment, momentum quality, and volume analysis.<br>
+  Long-term signals use P/E ratio, revenue growth YoY, profit margins, analyst targets, and manually-researched innovation/policy scores.<br>
+  <strong>Not financial advice.</strong> All signals are for educational and research purposes only.
+</footer>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG & CURATED DATA
+// ═══════════════════════════════════════════════════════════════════
+
+const CRYPTO_IDS = ['bitcoin','ethereum','solana','dogecoin','binancecoin','chainlink','avalanche-2','sui','arbitrum'];
+
+const CRYPTO_META = {
+  bitcoin:      {
+    icon:'₿', color:'#f7931a', bg:'#2a1800',
+    thesis:'Digital gold with fixed 21M supply. BlackRock IBIT ETF surpassed $50B AUM. Sovereign wealth funds beginning allocation. Post-halving supply crunch.',
+    macro:82, policy:80, moat:95, supply:92,
+    stCatalyst:78,
+    stNote:'FOMC rate decision today (May 7) is a major near-term catalyst. Dovish language = risk-on surge. ETF inflows have been strong all week. Key level: $100K resistance test imminent.',
+    stStrategy:'Watch for breakout above resistance. Buy dips toward $62K–64K support on any FOMC dip. Stop: close below $60K. Target: $70K–75K within 2 weeks.',
+    stHorizon:'3–10 days', stRisk:'Medium',
+    ltNote:'Institutional ETF infrastructure is now permanent — not reversible. Sovereign nations (UAE, Bhutan, El Salvador) holding BTC. Post-halving supply shock historically precedes 12–18 month bull runs.',
+    ltStrategy:'Core position. Dollar-cost average monthly. Do not trade around volatility. 18-month price target: $150K–250K (speculative). Add on >20% corrections.',
+    ltHorizon:'12–24 months', ltRisk:'Medium'
+  },
+  ethereum:     {
+    icon:'Ξ', color:'#627eea', bg:'#0f1430',
+    thesis:'The financial internet layer. Ultra-sound money (deflationary supply). ETF approved. EIP-4844 drastically cut L2 fees. Largest DeFi, NFT, and smart contract ecosystem.',
+    macro:78, policy:75, moat:88, supply:82,
+    stCatalyst:72,
+    stNote:'ETH has underperformed BTC YTD — a classic catch-up trade setup. ETF inflows picking up. Dencun upgrade benefits compound. Staking yield appeals to institutions.',
+    stStrategy:'Accumulate at current levels. Target BTC/ETH ratio compression. 5–10 day play. Stop: ETH/BTC ratio breakdown below key support.',
+    stHorizon:'5–10 days', stRisk:'Medium',
+    ltNote:'Deflationary supply mechanism (EIP-1559 + staking) combined with ETF approval creates structural demand vs shrinking float. DeFi TVL $100B+ locked in ETH ecosystem.',
+    ltStrategy:'Second largest crypto allocation after BTC. Buy every 20%+ dip. Staking rewards compound your position. 18-month target: $8K–12K (speculative).',
+    ltHorizon:'12–24 months', ltRisk:'Medium'
+  },
+  solana:       {
+    icon:'S', color:'#9945ff', bg:'#1a0f2e',
+    thesis:'Fastest growing L1 by developer activity. Firedancer client approaching 1M TPS. Consumer crypto leader (meme coins, DePIN, gaming). Potential ETF filing under review.',
+    macro:72, policy:68, moat:72, supply:65,
+    stCatalyst:80,
+    stNote:'Highest momentum crypto in the market right now. Ecosystem TVL at ATH. Multiple ETF applications filed — approval news would be a massive catalyst. High risk/high reward setup.',
+    stStrategy:'Momentum trade only. Buy on pullbacks to $145–155 support. Do not chase at ATH. Tight stop: $138. Target: $185–200. High volatility asset — size accordingly.',
+    stHorizon:'3–7 days', stRisk:'High',
+    ltNote:'Developer activity growing 40%+ YoY. Firedancer upgrade = 10x performance improvement. If ETF approved, institutional capital floods in. Consumer crypto user base = long-term moat.',
+    ltStrategy:'Speculative allocation. Buy dips. Expect 50-60% drawdowns are normal. 12-month target: $400–600 (speculative bull case). Position size: max 5-8% of portfolio.',
+    ltHorizon:'6–18 months', ltRisk:'High'
+  },
+  binancecoin:  {
+    icon:'B', color:'#f3ba2f', bg:'#2a2000',
+    thesis:'BNB Chain powers one of the largest DeFi ecosystems. Quarterly token burns reduce supply. Utility from Binance exchange (trading fee discounts) creates real demand.',
+    macro:65, policy:55, moat:68, supply:72,
+    stCatalyst:60,
+    stNote:'Stable price action. Less momentum than SOL/ETH but lower drawdown risk. Quarterly burn event upcoming provides a price catalyst. Regulatory overhang from Binance persists.',
+    stStrategy:'Range trade: buy near $580–600, target $650–680. Stop: $565. Lower conviction short-term play vs SOL/BTC.',
+    stHorizon:'1–2 weeks', stRisk:'Medium',
+    ltNote:'Binance ecosystem despite regulatory headwinds remains a critical infrastructure layer. Supply deflation from quarterly burns is real. Regulatory risk is the biggest long-term uncertainty.',
+    ltStrategy:'Smaller allocation given regulatory risk. Accumulate below $600. Monitor Binance legal developments closely.',
+    ltHorizon:'6–12 months', ltRisk:'High'
+  },
+  chainlink:    {
+    icon:'⬡', color:'#375bd2', bg:'#0a1030',
+    thesis:'The oracle monopoly for all blockchain data. SWIFT and major banks trialing CCIP for cross-chain settlements. RWA (Real World Asset) tokenisation is a $10T+ potential market.',
+    macro:70, policy:72, moat:85, supply:70,
+    stCatalyst:75,
+    stNote:'CCIP banking adoption announcements drive news flow. RWA tokenization narrative accelerating — LINK captures fees from every tokenized asset on-chain. Undervalued vs ecosystem role.',
+    stStrategy:'Accumulate on weakness. Buy under $14, target $17–19. CCIP deal announcement = immediate 15-20% catalyst. Stop: $12.50.',
+    stHorizon:'5–10 days', stRisk:'Medium',
+    ltNote:'Oracle infrastructure is not optional for any DeFi protocol — LINK is the toll road for all blockchain data. SWIFT partnership alone could be transformational. Arguably the most undervalued large-cap crypto.',
+    ltStrategy:'Long-term core position. Low turnover. Add on 30%+ dips. 18-month target: $35–60 (speculative). Hold through volatility.',
+    ltHorizon:'12–24 months', ltRisk:'Medium'
+  },
+  'avalanche-2':{
+    icon:'A', color:'#e84142', bg:'#2a0808',
+    thesis:'Subnet architecture enables private institutional chains. BlackRock BUIDL tokenized fund uses Avalanche. Fastest finality of any major L1 (< 1 second). Enterprise blockchain leader.',
+    macro:65, policy:68, moat:68, supply:62,
+    stCatalyst:65,
+    stNote:'Less momentum than Solana but enterprise institutional angle is unique. New subnet announcements are near-term catalysts. Oversold vs peers.',
+    stStrategy:'Buy under $30, target $36–40. Slower moving than SOL/ETH. Good for a 1–2 week swing. Stop: $27.',
+    stHorizon:'1–2 weeks', stRisk:'High',
+    ltNote:'Only L1 with a clear institutional private chain strategy that is actually deployed (not theoretical). BlackRock, Deloitte, and major banks building on Avalanche subnets.',
+    ltStrategy:'Mid-size speculative allocation. Hold alongside ETH/SOL. 12-month target: $80–120 (speculative). Buy on significant dips.',
+    ltHorizon:'12–18 months', ltRisk:'High'
+  },
+  sui:          {
+    icon:'S', color:'#6fbcf0', bg:'#0a1a2a',
+    thesis:'Move language provides superior security vs Solidity. Fastest growing new L1 by TVL. Strong gaming and DeFi ecosystem. Underowned by institutions — high upside potential.',
+    macro:68, policy:62, moat:60, supply:65,
+    stCatalyst:70,
+    stNote:'Under-owned = potential for violent upside squeeze. TVL growing fast. Move language ecosystem developers accelerating. High beta to broader crypto market.',
+    stStrategy:'Very high risk play. Only for active traders. Buy dips to $3.20–3.50. Target: $4.50–5.00. Tight stop: $3.00. Small position only.',
+    stHorizon:'3–7 days', stRisk:'Very High',
+    ltNote:'Early-stage ecosystem with asymmetric upside. Move language eventually could attract enterprise blockchain development. Gaming/social DeFi use case leader.',
+    ltStrategy:'Smallest allocation in portfolio (1–3%). Very high risk. Multi-year hold if you believe in Move language ecosystem dominance.',
+    ltHorizon:'6–12 months', ltRisk:'Very High'
+  },
+  arbitrum:     {
+    icon:'Ⓐ', color:'#28a0f0', bg:'#061828',
+    thesis:'Dominant Ethereum L2 by TVL ($3B+). BOLD fraud proof upgrade improving security. Real yield from sequencer fees distributed to ARB holders. Stylus enables Rust/C++ smart contracts.',
+    macro:70, policy:70, moat:72, supply:68,
+    stCatalyst:68,
+    stNote:'Arbitrum TVL growing consistently. BOLD upgrade is a near-term positive catalyst. ETH L2 ecosystem broadly benefiting from Dencun fee reductions.',
+    stStrategy:'Accumulate near $0.90–1.00. Target $1.20–1.35. Stop: $0.82. 1–2 week swing trade based on ETH ecosystem momentum.',
+    stHorizon:'1–2 weeks', stRisk:'High',
+    ltNote:'L2 wars are consolidating — Arbitrum has the deepest DeFi ecosystem and institutional adoption. Real yield protocol makes ARB a productive asset, not just speculation.',
+    ltStrategy:'Mid-size L2 allocation alongside ETH. 12-month target: $2.50–4.00 (speculative). Stake for yield while holding.',
+    ltHorizon:'12–18 months', ltRisk:'High'
+  },
+  dogecoin:     {
+    icon:'Ð', color:'#c2a633', bg:'#1e1800',
+    thesis:'Original meme coin now with real payment utility. Elon Musk endorsement + DOGE government efficiency dept creates unprecedented political tailwind. Low fees, fast transactions, and Robinhood/X Pay integration expanding retail reach.',
+    macro:60, policy:85, moat:62, supply:48,
+    stCatalyst:82,
+    stNote:'DOGE benefits directly from its political brand association. Any Elon announcement, X payment news, or government DOGE department update drives immediate price reaction. High retail sentiment makes it extremely reactive to social media. Watch X platform payment integrations.',
+    stStrategy:'High-beta momentum play. Buy dips to key support levels. Do not hold through major drawdowns — DOGE moves fast in both directions. Take partial profits at +20–30% moves.',
+    stHorizon:'1–5 days', stRisk:'Very High',
+    ltNote:'Uniquely positioned among meme coins — it has a functioning payment layer, near-zero fees, Elon as de facto brand ambassador, and a potential X.com payments integration that could put it in front of 600M+ users. The DOGE government dept gave it unparalleled mainstream name recognition.',
+    ltStrategy:'Speculative position only (max 5–10% of crypto allocation). Long-term hold if you believe X payments integration is coming. Add aggressively on 50%+ dips. Never panic sell the full position during bear markets.',
+    ltHorizon:'12–24 months', ltRisk:'Very High'
+  }
+};
+
+const STOCK_DATA = {
+  NVDA: {
+    name:'NVIDIA Corp', sector:'AI / Semiconductors', icon:'🟢', color:'#76b900',
+    thesis:'Undisputed AI chip monopoly. Blackwell GPU architecture driving data center supercycle. CUDA ecosystem lock-in. Sovereign AI spending a new growth vector.',
+    policy:65, innovation:95, macroAlign:90, fundamentals:82, momentum:75, moat:92,
+    stCatalyst:78,
+    stNote:'GTC conference results + Blackwell supply ramp data moving the stock. AI spending beat expectations. FOMC today = risk-on environment boosts high-beta tech. Positive analyst upgrades.',
+    stStrategy:'Buy dips to $850–880 support. Target $940–980 in 1–2 weeks. Stop: close below $840. High conviction short-term momentum trade.',
+    stHorizon:'5–10 days', stRisk:'Medium',
+    ltNote:'AI infrastructure buildout is a 5–10 year supercycle. CUDA has 15+ year developer lock-in. Blackwell → Rubin → Feynman architecture roadmap ensures perpetual upgrade cycle. Margin expansion ongoing.',
+    ltStrategy:'Core position — 8–12% of portfolio. Add on every 15–20% dip. 18–24 month price target: $1,200–1,500. Never sell the core position.',
+    ltHorizon:'12–24 months', ltRisk:'Medium'
+  },
+  MSFT: {
+    name:'Microsoft Corp', sector:'Cloud / AI Software', icon:'🔷', color:'#00a4ef',
+    thesis:'Azure AI integration monetising across 300M+ enterprise users. Copilot+ driving premium upsell. OpenAI partnership gives unmatched AI model access.',
+    policy:78, innovation:88, macroAlign:85, fundamentals:90, momentum:68, moat:88,
+    stCatalyst:65,
+    stNote:'Azure growth data and enterprise AI adoption metrics are the near-term catalyst. GitHub Copilot and M365 Copilot ARR data expected. Defensive quality in uncertain macro.',
+    stStrategy:'Lower-risk entry. Buy current levels or on any 3-4% dip. Target: 5–8% upside in 2 weeks. Stop: -4% from entry.',
+    stHorizon:'1–2 weeks', stRisk:'Low',
+    ltNote:'Compounding machine with AI optionality. 300M+ enterprise seats being upgraded. Azure #2 cloud growing faster than AWS. GitHub Copilot = new revenue stream. Dividend grower.',
+    ltStrategy:'Core position. Dollar-cost average quarterly. Never sell. 18–24 month target: $600–700. Boring wins.',
+    ltHorizon:'18–36 months', ltRisk:'Low'
+  },
+  META: {
+    name:'Meta Platforms', sector:'Social / AI / AR', icon:'🔵', color:'#0081fb',
+    thesis:'Llama AI driving engagement. AI-powered ad targeting boosting CPM. Ray-Ban AI glasses early success. 3.2B daily active users. Threads monetisation starting.',
+    policy:62, innovation:85, macroAlign:80, fundamentals:85, momentum:72, moat:82,
+    stCatalyst:72,
+    stNote:'AI ad revenue acceleration data incoming. Reels engagement growing. Instagram AI features announced. Strong relative strength vs peers. Positive earnings setup.',
+    stStrategy:'Buy near current levels. Target 6–10% upside in 5–10 days. Stop: -4%. Momentum continuation trade.',
+    stHorizon:'5–10 days', stRisk:'Medium',
+    ltNote:'AI monetisation of 3.2B users is just beginning. Ray-Ban AI glasses at scale could create a new $50B+ business. Llama open-source creates developer moat. Family of Apps growing.',
+    ltStrategy:'Core position 5–8% allocation. Hold through volatility. 18-month target: $750–950. Add on 20%+ dips.',
+    ltHorizon:'12–18 months', ltRisk:'Medium'
+  },
+  GOOGL: {
+    name:'Alphabet Inc', sector:'Search / Cloud / AI', icon:'🔴', color:'#4285f4',
+    thesis:'Gemini AI strengthening search moat. Google Cloud AI services accelerating. Waymo autonomous vehicles gaining commercial traction. Most undervalued of the AI mega-caps.',
+    policy:58, innovation:86, macroAlign:82, fundamentals:88, momentum:65, moat:87,
+    stCatalyst:60,
+    stNote:'Cloud AI deal announcements and Gemini update flow. Waymo expansion news. Search AI integration driving engagement metrics. P/E discount to peers creates near-term upside.',
+    stStrategy:'Value momentum setup. Buy under $185. Target $200–210 in 2 weeks. Stop: $178. Lower risk than NVDA/META.',
+    stHorizon:'1–2 weeks', stRisk:'Low',
+    ltNote:'Waymo alone could justify current entire market cap by 2030. Gemini is catching GPT-4. YouTube AI features. Google Cloud growing 28%+ YoY. Trading at discount to MSFT/META.',
+    ltStrategy:'Core position. Accumulate on any weakness below $180. 18–24 month target: $250–320. Margin of safety play.',
+    ltHorizon:'18–24 months', ltRisk:'Low'
+  },
+  PLTR: {
+    name:'Palantir Technologies', sector:'Defense AI / Gov', icon:'⚫', color:'#7d5af2',
+    thesis:'AIP platform is the enterprise AI operating system. US government AI contracts growing. Commercial revenue now > government. Rule-based AI approach resonates with compliance-heavy industries.',
+    policy:88, innovation:82, macroAlign:85, fundamentals:68, momentum:80, moat:75,
+    stCatalyst:82,
+    stNote:'Highest momentum stock in AI space. AIP bootcamp → enterprise contract conversions. NATO AI adoption news flow. High beta in risk-on environment. Potential price target upgrades.',
+    stStrategy:'Momentum trade. Buy on any 4–6% dip. Target: 10–15% upside in 3–7 days. Stop: below recent breakout level. High conviction but high volatility.',
+    stHorizon:'3–7 days', stRisk:'High',
+    ltNote:'First mover in government AI with 20+ year data moat. AIP commercial is growing 70%+ YoY. Will likely be the AI backbone of US government and NATO.',
+    ltStrategy:'Speculative growth position 3–6% allocation. High volatility. 12-month target: $50–80. Hold through corrections.',
+    ltHorizon:'6–18 months', ltRisk:'High'
+  },
+  LLY: {
+    name:'Eli Lilly & Co', sector:'Pharma / GLP-1', icon:'💊', color:'#d4003d',
+    thesis:'Mounjaro/Zepbound GLP-1 drugs addressing obesity (40% of US adults). Pipeline depth extraordinary. Diabetes + cardiovascular + kidney + weight = giant TAM.',
+    policy:80, innovation:90, macroAlign:78, fundamentals:85, momentum:70, moat:82,
+    stCatalyst:62,
+    stNote:'FDA approval watch for orforglipron (oral GLP-1 pill — game changer). Prescription data updates weekly. Biotech rotations can create short-term entry points.',
+    stStrategy:'Buy on any biotech sector weakness. Target 5–8% in 2 weeks. Stop: -5%. Less momentum but high quality.',
+    stHorizon:'1–2 weeks', stRisk:'Medium',
+    ltNote:'GLP-1 market projected to reach $150B by 2030 — LLY has 50%+ market share. Oral formulation would expand addressable market 10x. Alzheimers drug Kisunla is an additional $30B+ opportunity.',
+    ltStrategy:'Core pharma position. 5–8% allocation. Buy and hold. 18–24 month target: meaningful upside. Strong dividend.',
+    ltHorizon:'18–36 months', ltRisk:'Low-Medium'
+  },
+  NEE: {
+    name:'NextEra Energy', sector:'Clean Energy / Grid', icon:'⚡', color:'#00c271',
+    thesis:'Largest wind + solar operator in US. AI data center power demand creating 20-year power purchase agreements. IRA tax credits lock in returns. 10%+ dividend growth.',
+    policy:90, innovation:72, macroAlign:88, fundamentals:80, momentum:62, moat:78,
+    stCatalyst:58,
+    stNote:'New power purchase agreements with tech companies moving the stock. Utility sector benefits when interest rates stabilise. Defensive positioning in risk-off environments.',
+    stStrategy:'Defensive momentum trade. Buy under $70. Target $75–78 in 1–2 weeks. Stop: $67.',
+    stHorizon:'1–2 weeks', stRisk:'Low',
+    ltNote:'AI data centers need 10x more electricity than regular computing. NextEra has already signed multi-decade contracts with Amazon, Microsoft, Google. IRA subsidies locked in for 10+ years.',
+    ltStrategy:'Infrastructure core holding 5–8%. Collect the 3%+ dividend while you wait. 24–36 month target: $90–110. Dollar-cost average.',
+    ltHorizon:'24–36 months', ltRisk:'Low'
+  },
+  LMT: {
+    name:'Lockheed Martin', sector:'Defense', icon:'🛡️', color:'#0d47a1',
+    thesis:'Global defense spending at post-Cold War records. F-35 program + NGAD fighter. NATO 2% GDP pledge driving European orders. Missile and hypersonics demand surging.',
+    policy:92, innovation:75, macroAlign:90, fundamentals:82, momentum:68, moat:85,
+    stCatalyst:68,
+    stNote:'Geopolitical news flow drives defense stocks. European defense spending announcements. Ongoing military contracts flow positive. Defensive sector holds up in uncertain markets.',
+    stStrategy:'Buy under $550. Target $580–600 in 1–2 weeks. Stop: $540. Defensive quality stock in risk-on or risk-off.',
+    stHorizon:'1–2 weeks', stRisk:'Low',
+    ltNote:'Global rearmament is a 20-year megatrend. NATO 2% GDP spending means $100B+ extra annual defense budget across Europe alone. F-35 program worth hundreds of billions over its lifetime.',
+    ltStrategy:'Core defense holding 4–6%. Buy and hold. 24–36 month target: $700–850. Strong dividend and buybacks.',
+    ltHorizon:'24–36 months', ltRisk:'Low'
+  }
+};
+
+const MACRO_INDICATORS = [
+  { label:'FOMC Rate Decision TODAY', value:'4.25–4.50%', note:'May 7 — unchanged expected', dot:'yellow', impact:'Forward guidance language is the key catalyst — dovish = risk-on' },
+  { label:'US Inflation (CPI)', value:'3.4% YoY', note:'Declining from 9% peak', dot:'green', impact:'Disinflation = equity & crypto friendly' },
+  { label:'US GDP Growth', value:'+2.5%', note:'Soft landing confirmed', dot:'green', impact:'No recession = strong earnings' },
+  { label:'Dollar Index (DXY)', value:'104–106', note:'Moderating from highs', dot:'yellow', impact:'Moderate USD = crypto/commodity tailwind' },
+  { label:'10Y Treasury Yield', value:'4.3–4.6%', note:'Elevated but stabilising', dot:'yellow', impact:'Rate drops = growth stock re-rating' },
+  { label:'AI Capex Cycle', value:'Accelerating', note:'$500B+ committed 2024–26', dot:'green', impact:'Direct demand for chips, cloud, energy' },
+  { label:'BTC ETF AUM', value:'$50B+', note:'BlackRock IBIT #1 fastest ETF ever', dot:'green', impact:'Institutional demand permanently new' },
+  { label:'Global Defense Spend', value:'+8% YoY', note:'NATO, Indo-Pacific rearming', dot:'green', impact:'Defense contractors multi-year runway' },
+];
+
+const CATALYSTS = [
+  { type:'bullish', title:'FOMC Decision — TODAY May 7', desc:'Fed rate decision today. Market expects unchanged rates. Dovish forward guidance could trigger a sharp risk-on rally across stocks and crypto. Watch the press conference language carefully.', assets:['BTC','ETH','NVDA','META','GOOGL'] },
+  { type:'bullish', title:'AI Infrastructure Supercycle', desc:'Microsoft, Google, Amazon, Meta spending $200B+ on AI data centers in 2025. Direct demand for chips (NVDA), power (NEE), networking and cloud.', assets:['NVDA','MSFT','GOOGL','META','NEE'] },
+  { type:'bullish', title:'Bitcoin ETF Institutional Adoption', desc:'BlackRock IBIT surpassed $50B AUM faster than any ETF in history. Pension funds and endowments beginning allocation. Structural demand shift.', assets:['BTC','ETH'] },
+  { type:'bullish', title:'GLP-1 Weight Loss Drug Revolution', desc:'GLP-1 drugs showing benefits beyond weight: heart, kidney, liver, potentially Alzheimers. $150B+ TAM by 2030. Oral formulation (orforglipron) would expand market 10x.', assets:['LLY'] },
+  { type:'bullish', title:'Defense Spending Supercycle', desc:'NATO members hiking budgets to 2–3% GDP. Ukraine conflict, Taiwan tensions, Indo-Pacific buildup driving demand for decades.', assets:['LMT','PLTR'] },
+  { type:'bullish', title:'Solana ETF Application Filed', desc:'Multiple asset managers filed SOL ETF applications. Approval would unlock institutional capital following BTC and ETH ETF success.', assets:['SOL'] },
+  { type:'watch', title:'Fed Rate Cut Timing', desc:'Earlier cuts = risk-on signal. Delayed cuts if inflation re-accelerates = headwind for growth stocks and crypto. Watch CPI monthly.', assets:['MSFT','GOOGL','BTC','ETH'] },
+  { type:'watch', title:'US-China Tech Export Controls', desc:'NVDA ~20% China revenue exposure. Export restrictions creating headwinds but US + sovereign AI demand more than compensates near term.', assets:['NVDA','MSFT'] },
+  { type:'risk', title:'Crypto Regulatory Uncertainty', desc:'SEC enforcement continuing. MiCA in EU imposes new requirements. US clarity improving under current administration but not resolved.', assets:['BTC','ETH','SOL','BNB'] },
+  { type:'risk', title:'Equity Valuations Stretched', desc:'S&P 500 P/E at 22x — above historical average. AI stocks pricing in perfect execution. Any earnings miss could trigger sharp corrections.', assets:['NVDA','META','MSFT'] },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// SCORING ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+function calcRSI(prices, period = 14) {
+  if (!prices || prices.length < period + 1) return null;
+  const changes = [];
+  for (let i = 1; i < prices.length; i++) changes.push(prices[i] - prices[i - 1]);
+  const gains  = changes.map(c => c > 0 ? c : 0);
+  const losses = changes.map(c => c < 0 ? -c : 0);
+  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < changes.length; i++) {
+    avgGain = (avgGain * (period - 1) + gains[i]) / period;
+    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+  }
+  if (avgLoss === 0) return 100;
+  return Math.round(100 - (100 / (1 + avgGain / avgLoss)));
+}
+
+function rsiToScore(rsi) {
+  if (rsi === null || rsi === undefined) return 55;
+  if (rsi < 30)  return 92; // strong oversold bounce signal
+  if (rsi < 38)  return 80; // oversold recovery
+  if (rsi < 45)  return 72; // mildly oversold = good entry
+  if (rsi < 55)  return 60; // neutral
+  if (rsi < 65)  return 50; // slightly overbought
+  if (rsi < 72)  return 38; // overbought = risky entry
+  return 20;               // very overbought = avoid entry
+}
+
+function rsiColor(rsi) {
+  if (rsi === null) return 'var(--muted)';
+  if (rsi < 30) return 'var(--green)';
+  if (rsi < 45) return '#34d399';
+  if (rsi < 55) return 'var(--yellow)';
+  if (rsi < 70) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function normSentiment(score) {
+  // AV ticker_sentiment_score: -1 to +1, 0 = neutral
+  if (score === null || score === undefined) return 55;
+  return Math.min(100, Math.max(0, Math.round((score + 0.35) / 0.70 * 100)));
+}
+
+function sentimentLabel(score) {
+  if (score === null) return null;
+  if (score >  0.15) return { label: 'Bullish',    cls: 'pill-green' };
+  if (score >  0.05) return { label: 'S-Bullish',  cls: 'pill-green' };
+  if (score > -0.05) return { label: 'Neutral',    cls: 'pill-gray' };
+  if (score > -0.15) return { label: 'S-Bearish',  cls: 'pill-yellow' };
+  return                     { label: 'Bearish',    cls: 'pill-red' };
+}
+
+function scoreCrypto(coin, meta) {
+  const p7  = coin.price_change_percentage_7d_in_currency  || 0;
+  const p30 = coin.price_change_percentage_30d_in_currency || 0;
+
+  // Momentum QUALITY — rewards moderate gains, penalises parabolic overextension.
+  // A 30%+ pump in 7 days usually means overbought, not a good entry.
+  function momQ(pct, sweet, overExt) {
+    if (pct > overExt)    return 32; // parabolic — likely overbought, poor entry
+    if (pct > sweet)      return 60; // strong but not overextended
+    if (pct > 2)          return 80; // healthy uptrend
+    if (pct > -sweet)     return 65; // slight dip / consolidation = buy-the-dip
+    if (pct > -overExt)   return 42; // significant pullback
+    return 22;                        // heavy downtrend
+  }
+  const momentum = momQ(p7, 12, 25) * 0.55 + momQ(p30, 22, 45) * 0.45;
+
+  // RSI from 7-day hourly sparkline — CORE signal, prevents overbought assets ranking high.
+  const rsi = rsiCache['CRYPTO_' + coin.id];
+  let rsiScore = 55;
+  if (rsi != null) {
+    if      (rsi < 25) rsiScore = 92; // deeply oversold = strong opportunity
+    else if (rsi < 35) rsiScore = 80;
+    else if (rsi < 45) rsiScore = 70;
+    else if (rsi < 57) rsiScore = 58; // neutral
+    else if (rsi < 67) rsiScore = 44;
+    else if (rsi < 76) rsiScore = 28; // overbought = poor entry timing
+    else               rsiScore = 14; // very overbought = avoid
+  }
+
+  // Volume signal (high volume/mcap = strong interest)
+  const vtm    = coin.total_volume / coin.market_cap * 100;
+  const volume = Math.min(100, Math.max(0, vtm * 8));
+
+  // Trend: second half of sparkline vs first half
+  let trend = 50;
+  const sp = coin.sparkline_in_7d?.price || [];
+  if (sp.length > 20) {
+    const mid = Math.floor(sp.length / 2);
+    const a1 = sp.slice(0, mid).reduce((a, b) => a + b, 0) / mid;
+    const a2 = sp.slice(mid).reduce((a, b) => a + b, 0) / (sp.length - mid);
+    trend = Math.min(100, Math.max(0, (((a2 - a1) / a1) * 100 + 15) / 30 * 100));
+  }
+
+  const total =
+    (momentum          * 0.23) +
+    (rsiScore          * 0.22) + // RSI now has meaningful weight
+    (volume            * 0.14) +
+    (trend             * 0.18) +
+    ((meta.macro  ||50)* 0.14) +
+    ((meta.policy ||50)* 0.09);
+
+  return {
+    total: Math.round(total),
+    breakdown: { momentum: Math.round(momentum), rsi: Math.round(rsiScore), volume: Math.round(volume), trend: Math.round(trend), macro: meta.macro||50, policy: meta.policy||50 }
+  };
+}
+
+function scoreStock(manual, liveChange, liveRSI) {
+  // Momentum quality — same principle as crypto: penalise overextension
+  let mom = manual.momentum;
+  if (liveChange !== null && liveChange !== undefined) {
+    if      (liveChange > 6)  mom = 55; // big single-day move — likely overbought intraday
+    else if (liveChange > 2)  mom = 75;
+    else if (liveChange > 0)  mom = 70;
+    else if (liveChange > -3) mom = 65; // slight red = potential entry
+    else if (liveChange > -7) mom = 48;
+    else                       mom = 30;
+  }
+
+  // RSI — use live value from Alpha Vantage if available, else neutral fallback
+  let rsiScore = 55;
+  if (liveRSI != null) {
+    if      (liveRSI < 25) rsiScore = 92;
+    else if (liveRSI < 35) rsiScore = 80;
+    else if (liveRSI < 45) rsiScore = 70;
+    else if (liveRSI < 57) rsiScore = 58;
+    else if (liveRSI < 67) rsiScore = 44;
+    else if (liveRSI < 76) rsiScore = 28;
+    else                    rsiScore = 14;
+  }
+
+  const total =
+    (mom                 * 0.14) +
+    (rsiScore            * 0.16) +
+    (manual.fundamentals * 0.22) +
+    (manual.innovation   * 0.23) +
+    (manual.policy       * 0.13) +
+    (manual.macroAlign   * 0.12);
+
+  return {
+    total: Math.round(total),
+    breakdown: { momentum: Math.round(mom), rsi: Math.round(rsiScore), fundamentals: manual.fundamentals, innovation: manual.innovation, policy: manual.policy, macroAlign: manual.macroAlign }
+  };
+}
+
+// Short-term score: RSI + Sentiment + Momentum quality + Volume + Near-term catalyst
+function scoreShortTerm(meta, rsi, sentiment, p24, p7, volumeRatio) {
+  const rsiScore  = rsiToScore(rsi);
+  const sentScore = normSentiment(sentiment);
+  // Momentum quality: sweet spot is +3% to +15% — not overextended
+  const avgMom = (p24 * 0.6) + (p7 * 0.4);
+  let momScore;
+  if      (avgMom > 30)  momScore = 28; // dangerously overextended
+  else if (avgMom > 18)  momScore = 45;
+  else if (avgMom > 8)   momScore = 68;
+  else if (avgMom > 2)   momScore = 82;
+  else if (avgMom > -6)  momScore = 70; // slight dip = buy the dip
+  else if (avgMom > -15) momScore = 50;
+  else                   momScore = 30;
+  // Volume surge — volumeRatio is volume/mcap expressed as a percentage (e.g. 3.5 = 3.5%)
+  let volScore = 50;
+  if (volumeRatio !== null && volumeRatio !== undefined) {
+    if      (volumeRatio > 12) volScore = 88; // extreme volume — strong conviction
+    else if (volumeRatio > 7)  volScore = 72;
+    else if (volumeRatio > 3)  volScore = 58;
+    else if (volumeRatio > 1)  volScore = 48;
+    else                       volScore = 35; // very thin — low conviction
+  }
+  const catScore = meta.stCatalyst || 55;
+  const total = (rsiScore * 0.22) + (sentScore * 0.20) + (momScore * 0.28) + (volScore * 0.15) + (catScore * 0.15);
+  return { total: Math.round(total), rsiScore: Math.round(rsiScore), sentScore: Math.round(sentScore), momScore: Math.round(momScore), volScore: Math.round(volScore), catScore: Math.round(catScore) };
+}
+
+// Long-term score: Fundamentals + Innovation + Moat + Macro + Policy (+ Supply for crypto)
+function scoreLongTerm(meta, type, overview) {
+  // For stocks, meta.fundamentals is a manually-curated score.
+  // For crypto, there is no meta.fundamentals — supply is already its own
+  // separate term in the crypto formula, so using it here as a fundScore
+  // seed would double-count it. Use a neutral 65 for crypto instead.
+  let fundScore = type === 'stock' ? (meta.fundamentals || 65) : 65;
+  let revenueGrowth = null, pe = null, margin = null, analystTarget = null;
+  if (overview && overview.Symbol) {
+    pe = parseFloat(overview.PERatio);
+    const revG  = parseFloat(overview.QuarterlyRevenueGrowthYOY) * 100;
+    const marg  = parseFloat(overview.ProfitMargin) * 100;
+    revenueGrowth = isNaN(revG) ? null : revG.toFixed(1);
+    margin        = isNaN(marg) ? null : marg.toFixed(1);
+    analystTarget = (overview.AnalystTargetPrice && overview.AnalystTargetPrice !== 'None') ? overview.AnalystTargetPrice : null;
+    if (!isNaN(pe) && pe > 0 && !isNaN(revG) && revG > 0) {
+      const peg = pe / revG; // PEG ratio
+      let peScore = peg < 1 ? 90 : peg < 1.5 ? 78 : peg < 2.5 ? 62 : peg < 4 ? 48 : 32;
+      const growthScore = Math.min(100, Math.max(0, 40 + revG * 1.5));
+      const marginScore = Math.min(100, Math.max(0, isNaN(marg) ? 60 : marg * 1.5));
+      fundScore = (peScore * 0.35) + (growthScore * 0.40) + (marginScore * 0.25);
+    }
+  }
+  const innovScore  = meta.innovation  || 65;
+  const macroScore  = type === 'crypto' ? (meta.macro || 65) : (meta.macroAlign || 65);
+  const policyScore = meta.policy || 65;
+  const moatScore   = meta.moat   || 65;
+  const supplyScore = meta.supply  || 65;
+  let total;
+  if (type === 'stock') {
+    total = (fundScore * 0.28) + (innovScore * 0.25) + (macroScore * 0.20) + (policyScore * 0.15) + (moatScore * 0.12);
+  } else {
+    total = (fundScore * 0.20) + (innovScore * 0.18) + (macroScore * 0.20) + (policyScore * 0.14) + (moatScore * 0.14) + (supplyScore * 0.14);
+  }
+  return { total: Math.round(total), fundScore: Math.round(fundScore), innovScore, macroScore, policyScore, moatScore, supplyScore, pe, revenueGrowth, margin, analystTarget };
+}
+
+function getSignal(score) {
+  if (score >= 76) return { label:'STRONG BUY', cls:'sig-sb' };
+  if (score >= 62) return { label:'BUY',         cls:'sig-b'  };
+  if (score >= 48) return { label:'HOLD',         cls:'sig-h'  };
+  return                  { label:'AVOID',         cls:'sig-a'  };
+}
+function scoreColor(s) {
+  if (s >= 75) return '#10b981';
+  if (s >= 60) return '#34d399';
+  if (s >= 48) return '#f59e0b';
+  return '#ef4444';
+}
+function ringStyle(s) {
+  const c = scoreColor(s), d = s * 3.6;
+  return `background:conic-gradient(${c} 0deg,${c} ${d}deg,#1c1c1c ${d}deg 360deg)`;
+}
+function riskCls(r) {
+  if (!r) return 'risk-med';
+  const l = r.toLowerCase();
+  if (l.includes('very')) return 'risk-vhigh';
+  if (l.includes('high')) return 'risk-high';
+  if (l.includes('low'))  return 'risk-low';
+  return 'risk-med';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FORMATTERS
+// ═══════════════════════════════════════════════════════════════════
+
+function fmtPrice(p) {
+  if (p == null || isNaN(p)) return '$—';
+  if (p >= 1000) return '$' + p.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (p >= 1)    return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 0.01) return '$' + p.toFixed(4);
+  return '$' + p.toFixed(6);
+}
+function fmtPct(v) { if (v == null || isNaN(v)) return '—%'; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+function fmtB(v) {
+  if (v == null || isNaN(v)) return '$—';
+  if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+  if (v >= 1e9)  return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6)  return '$' + (v / 1e6).toFixed(0) + 'M';
+  return '$' + v.toFixed(0);
+}
+function barHtml(label, val) {
+  const c = scoreColor(val);
+  return `<div class="score-bar-wrap">
+    <div class="score-bar-header"><span>${label}</span><span style="color:${c};font-weight:700">${val}</span></div>
+    <div class="score-bar-track"><div class="score-bar-fill" style="width:${val}%;background:${c}"></div></div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA FETCHING
+// ═══════════════════════════════════════════════════════════════════
+
+let cryptoData = [], stockScores = {}, cryptoScored = [];
+// AV calls are proxied through Netlify Function on live site (key is server-side env var).
+// When running locally via file:// the direct URL with key is used for development.
+const _IS_LOCAL = window.location.protocol === 'file:' || window.location.hostname === 'localhost';
+const _AV_BASE  = _IS_LOCAL ? 'https://www.alphavantage.co/query' : '/api/av';
+const _AV_KEY   = _IS_LOCAL ? '&apikey=WX99U607NRT5ZZX7' : ''; // key never sent on live site
+let avKey = true; // truthy guard — actual key lives in Netlify env var AV_KEY
+let rsiCache = {}, sentimentCache = {}, overviewCache = {};
+let deepAnalysisDone = false;
+
+function applyGlobalData(g) {
+  const mcap = g.mcap, vol = g.vol, btcd = g.btcd, chg = g.chg;
+  document.getElementById('hdr-mcap').textContent = fmtB(mcap);
+  document.getElementById('hdr-btcd').textContent = btcd.toFixed(1) + '%';
+  document.getElementById('ov-mcap').textContent  = fmtB(mcap);
+  document.getElementById('ov-vol').textContent   = fmtB(vol);
+  document.getElementById('ov-btcd').textContent  = btcd.toFixed(1) + '%';
+  document.getElementById('ov-mcap-chg').innerHTML = `<span class="${chg >= 0 ? 'up' : 'dn'}">${fmtPct(chg)} 24h</span>`;
+  document.getElementById('ov-vol-note').textContent  = 'vs Market Cap: ' + (vol / mcap * 100).toFixed(1) + '%';
+  document.getElementById('ov-btcd-note').textContent = btcd > 55 ? '↑ BTC season' : btcd < 45 ? '↓ Altcoin season' : 'Balanced market';
+  const fg = Math.min(100, Math.max(0, Math.round(50 + chg * 4)));
+  const [fgLabel, fgColor] = fg >= 75 ? ['EXTREME GREED','#10b981'] : fg >= 55 ? ['GREED','#34d399'] : fg >= 45 ? ['NEUTRAL','#f59e0b'] : fg >= 25 ? ['FEAR','#f97316'] : ['EXTREME FEAR','#ef4444'];
+  document.getElementById('ov-fg').innerHTML     = `<span style="color:${fgColor};font-size:22px;font-weight:900">${fg}</span>`;
+  document.getElementById('ov-fg-lbl').innerHTML = `<span style="color:${fgColor}">${fgLabel}</span>`;
+}
+
+async function fetchGlobal() {
+  try {
+    const d = await (await fetch('https://api.coingecko.com/api/v3/global', { signal: AbortSignal.timeout(6000) })).json();
+    const g = d.data;
+    const payload = { mcap: g.total_market_cap.usd, vol: g.total_volume.usd, btcd: g.market_cap_percentage.btc, chg: g.market_cap_change_percentage_24h_usd };
+    saveCache('global', payload);
+    applyGlobalData(payload);
+  } catch(e) { console.warn('Global fetch failed', e); }
+}
+
+async function fetchCrypto() {
+  const ids = CRYPTO_IDS.join(',');
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=20&sparkline=true&price_change_percentage=1h,24h,7d,30d`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error('CoinGecko error ' + res.status);
+  cryptoData = await res.json();
+  saveCache('crypto', cryptoData);
+  // Compute RSI from sparkline for each coin
+  cryptoData.forEach(c => {
+    const sp = c.sparkline_in_7d?.price || [];
+    rsiCache['CRYPTO_' + c.id] = calcRSI(sp);
+  });
+  renderCrypto();
+}
+
+async function fetchStockQuote(symbol) {
+  if (!avKey) return null;
+  try {
+    const d = await (await fetch(
+      `${_AV_BASE}?function=GLOBAL_QUOTE&symbol=${symbol}${_AV_KEY}`,
+      { signal: AbortSignal.timeout(5000) }
+    )).json();
+    if (d['Global Quote'] && d['Global Quote']['05. price']) {
+      return { change: parseFloat(d['Global Quote']['10. change percent']?.replace('%', '') || 0), price: parseFloat(d['Global Quote']['05. price']) };
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function fetchAVRSI(symbol) {
+  if (!avKey) return null;
+  try {
+    const d = await (await fetch(`${_AV_BASE}?function=RSI&symbol=${symbol}&interval=daily&time_period=14&series_type=close${_AV_KEY}`)).json();
+    const data = d['Technical Analysis: RSI'];
+    if (data) return parseFloat(Object.values(data)[0].RSI);
+  } catch(e) {}
+  return null;
+}
+
+async function fetchAVOverview(symbol) {
+  if (!avKey) return null;
+  try {
+    const d = await (await fetch(`${_AV_BASE}?function=OVERVIEW&symbol=${symbol}${_AV_KEY}`)).json();
+    if (d && d.Symbol) return d;
+  } catch(e) {}
+  return null;
+}
+
+async function fetchNewsSentiment(symbols) {
+  if (!avKey) return {};
+  try {
+    const tickers = symbols.join(',');
+    const d = await (await fetch(`${_AV_BASE}?function=NEWS_SENTIMENT&tickers=${tickers}&sort=LATEST&limit=50${_AV_KEY}`)).json();
+    const map = {};
+    if (d.feed) {
+      d.feed.forEach(article => {
+        (article.ticker_sentiment || []).forEach(ts => {
+          if (!map[ts.ticker]) map[ts.ticker] = [];
+          map[ts.ticker].push({ score: parseFloat(ts.ticker_sentiment_score), rel: parseFloat(ts.relevance_score) });
+        });
+      });
+    }
+    const result = {};
+    Object.keys(map).forEach(t => {
+      const items = map[t], totalRel = items.reduce((a, b) => a + b.rel, 0);
+      result[t] = totalRel > 0 ? items.reduce((a, b) => a + b.score * b.rel, 0) / totalRel : 0;
+    });
+    return result;
+  } catch(e) {}
+  return {};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DEEP ANALYSIS (RSI + Fundamentals + News Sentiment)
+// ═══════════════════════════════════════════════════════════════════
+
+function setStep(id, state) {
+  const el = document.getElementById('step-' + id);
+  if (el) { el.className = 'da-step ' + state; el.textContent = id; }
+}
+function addStep(id, label) {
+  const prog = document.getElementById('da-progress');
+  const el = document.createElement('span');
+  el.className = 'da-step pending'; el.id = 'step-' + id; el.textContent = label;
+  prog.appendChild(el);
+}
+
+async function runDeepAnalysis() {
+  if (!avKey) { showToast('⚠️ Alpha Vantage key required for deep analysis'); return; }
+  const btn = document.getElementById('deep-btn');
+  btn.disabled = true; btn.textContent = '🔬 Analysing...';
+  const bar = document.getElementById('da-bar');
+  bar.style.display = 'flex';
+  document.getElementById('da-progress').innerHTML = '';
+  const symbols   = Object.keys(STOCK_DATA);
+  const topStocks = symbols.slice(0, 5);
+  ['News Sentiment', 'RSI x5', ...topStocks.map(s => s + ' OV')].forEach(s => addStep(s, s));
+  document.getElementById('da-sub').textContent = 'Step 1/3: Fetching news sentiment for all stocks...';
+
+  // Step 1: News sentiment (1 call)
+  setStep('News Sentiment', 'loading');
+  const sentiment = await fetchNewsSentiment(symbols);
+  Object.assign(sentimentCache, sentiment);
+  setStep('News Sentiment', 'done');
+
+  // Step 2: RSI for top 5 stocks (5 calls)
+  document.getElementById('da-sub').textContent = 'Step 2/3: Fetching RSI for top stocks...';
+
+  for (const sym of topStocks) {
+    setStep('RSI x5', 'loading');
+    const rsi = await fetchAVRSI(sym);
+    if (rsi !== null) rsiCache[sym] = rsi;
+    await new Promise(r => setTimeout(r, 300));
+  }
+  setStep('RSI x5', 'done');
+
+  // Step 3: Fundamentals overview for top 5 (5 calls)
+  document.getElementById('da-sub').textContent = 'Step 3/3: Fetching company fundamentals...';
+  for (const sym of topStocks) {
+    const stepKey = sym + ' OV';
+    setStep(stepKey, 'loading');
+    const ov = await fetchAVOverview(sym);
+    if (ov) overviewCache[sym] = ov;
+    await new Promise(r => setTimeout(r, 300));
+    setStep(stepKey, 'done');
+  }
+
+  document.getElementById('da-sub').textContent = '✓ Deep analysis complete — rendering strategy section...';
+  deepAnalysisDone = true;
+  renderStrategySection();
+  btn.disabled = false; btn.textContent = '✓ Analysis Complete — Re-run';
+  showToast('✓ Deep analysis complete! ST/LT section updated with live RSI, sentiment & fundamentals.');
+  setTimeout(() => { bar.style.display = 'none'; }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDERERS — MAIN DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+
+function renderCrypto() {
+  const grid = document.getElementById('crypto-grid');
+  grid.innerHTML = '';
+  const scored = cryptoData.map(coin => {
+    const meta = CRYPTO_META[coin.id] || { icon:'●', color:'#64748b', bg:'#1a2234', thesis:'', macro:60, policy:60 };
+    return { coin, meta, s: scoreCrypto(coin, meta) };
+  }).sort((a, b) => b.s.total - a.s.total);
+  scored.forEach(({ coin, meta, s }) => {
+    const sig = getSignal(s.total), p24 = coin.price_change_percentage_24h_in_currency || 0, p7 = coin.price_change_percentage_7d_in_currency || 0;
+    const col = scoreColor(s.total);
+    const el = document.createElement('div');
+    el.className = 'asset-card';
+    el.innerHTML = `
+      <div class="asset-top">
+        <div class="asset-info">
+          <div class="asset-icon" style="background:${meta.bg};color:${meta.color}">${meta.icon}</div>
+          <div><div class="asset-name">${coin.name}</div><div class="asset-sym">${coin.symbol.toUpperCase()} · #${coin.market_cap_rank}</div></div>
+        </div>
+        <div class="asset-price">
+          <div class="asset-price-val">${fmtPrice(coin.current_price)}</div>
+          <div class="asset-price-chg ${p24>=0?'up':'dn'}">${fmtPct(p24)} 24h</div>
+          <div class="asset-price-chg ${p7>=0?'up':'dn'}" style="font-size:10px">${fmtPct(p7)} 7d</div>
+        </div>
+      </div>
+      <div class="asset-mid">
+        <div>
+          <div class="score-ring" style="${ringStyle(s.total)}"><span class="score-num" style="color:${col}">${s.total}</span></div>
+          <div class="score-lbl">Score</div>
+        </div>
+        <div style="flex:1;padding-left:12px">
+          <span class="sig ${sig.cls}">${sig.label}</span>
+          <div style="margin-top:8px;font-size:10px;color:var(--muted)">Mkt Cap: ${fmtB(coin.market_cap)}</div>
+          <div style="font-size:10px;color:var(--muted)">Vol/MCap: ${(coin.total_volume/coin.market_cap*100).toFixed(1)}%</div>
+        </div>
+      </div>
+      <div class="asset-thesis">${meta.thesis}</div>
+      <div class="asset-scores">
+        ${barHtml('Momentum Quality', s.breakdown.momentum)}
+        ${barHtml('RSI Signal', s.breakdown.rsi)}
+        ${barHtml('Volume', s.breakdown.volume)}
+        ${barHtml('Trend', s.breakdown.trend)}
+        ${barHtml('Macro/Policy', Math.round((s.breakdown.macro + s.breakdown.policy) / 2))}
+      </div>`;
+    grid.appendChild(el);
+  });
+  cryptoScored = scored; // cache for use when renderStocks updates stockScores
+  renderTopPicks(scored);
+  renderStrategySection(); // refresh strategy section now that crypto scores are available
+}
+
+function buildStockCardHtml(sym, s, manual, live) {
+  const sig = getSignal(s.total), col = scoreColor(s.total);
+  const priceHtml = live
+    ? `<div class="asset-price-val">$${live.price.toFixed(2)}</div><div class="asset-price-chg ${live.change>=0?'up':'dn'}">${fmtPct(live.change)} today</div>`
+    : `<div style="font-size:11px;color:var(--muted)">—</div>`;
+  return `
+    <div class="asset-top">
+      <div class="asset-info">
+        <div class="asset-icon" style="background:var(--card2);color:${manual.color};font-size:22px">${manual.icon}</div>
+        <div><div class="asset-name">${sym}</div><div class="asset-sym">${manual.sector}</div></div>
+      </div>
+      <div class="asset-price">${priceHtml}</div>
+    </div>
+    <div class="asset-mid">
+      <div>
+        <div class="score-ring" style="${ringStyle(s.total)}"><span class="score-num" style="color:${col}">${s.total}</span></div>
+        <div class="score-lbl">Score</div>
+      </div>
+      <div style="flex:1;padding-left:12px">
+        <span class="sig ${sig.cls}">${sig.label}</span>
+        <div style="margin-top:6px;font-size:10px;color:var(--muted)">${manual.name}</div>
+      </div>
+    </div>
+    <div class="asset-thesis">${manual.thesis}</div>
+    <div class="asset-scores">
+      ${barHtml('Momentum Quality', s.breakdown.momentum)}
+      ${barHtml('RSI Signal', s.breakdown.rsi)}
+      ${barHtml('Fundamentals', s.breakdown.fundamentals)}
+      ${barHtml('Innovation', s.breakdown.innovation)}
+      ${barHtml('Policy/Macro', Math.round((s.breakdown.policy + s.breakdown.macroAlign) / 2))}
+    </div>`;
+}
+
+async function renderStocks() {
+  const grid = document.getElementById('stock-grid');
+  grid.innerHTML = '';
+  const symbols = Object.keys(STOCK_DATA);
+
+  // Phase 1 — render all cards INSTANTLY with static scores (no API calls needed)
+  symbols.forEach(sym => {
+    const manual = STOCK_DATA[sym];
+    const liveRSI = rsiCache[sym] ?? null;
+    const s = scoreStock(manual, null, liveRSI);
+    stockScores[sym] = { s, manual, live: null };
+    const el = document.createElement('div');
+    el.className = 'asset-card'; el.id = 'sc-' + sym;
+    el.innerHTML = buildStockCardHtml(sym, s, manual, null);
+    grid.appendChild(el);
+  });
+
+  // Phase 2 — fetch all quotes in parallel (5s timeout each), update each card as data arrives
+  await Promise.all(symbols.map(async sym => {
+    const manual = STOCK_DATA[sym];
+    const live = await fetchStockQuote(sym);
+    const liveRSI = rsiCache[sym] ?? null;
+    const s = scoreStock(manual, live ? live.change : null, liveRSI);
+    stockScores[sym] = { s, manual, live };
+    const card = document.getElementById('sc-' + sym);
+    if (card) card.innerHTML = buildStockCardHtml(sym, s, manual, live);
+  }));
+
+  // Phase 3 — re-sort cards into score order by moving DOM nodes (no re-render)
+  [...grid.children]
+    .sort((a, b) => (stockScores[b.id.slice(3)]?.s.total || 0) - (stockScores[a.id.slice(3)]?.s.total || 0))
+    .forEach(el => grid.appendChild(el));
+
+  saveCache('stocks', stockScores); // persist so next page load is instant
+  renderStrategySection();
+  if (cryptoScored.length) renderTopPicks(cryptoScored);
+}
+
+function renderTopPicks(cryptoScored) {
+  const all = [];
+  cryptoScored.forEach(({ coin, s }) => {
+    const meta = CRYPTO_META[coin.id] || {};
+    all.push({ name: coin.name, sym: coin.symbol.toUpperCase(), type: 'crypto', score: s.total, thesis: (meta.thesis||'').slice(0, 90) + '...' });
+  });
+  Object.keys(stockScores).forEach(sym => {
+    const { s, manual } = stockScores[sym];
+    all.push({ name: manual.name, sym, type: 'stock', score: s.total, thesis: manual.thesis.slice(0, 90) + '...' });
+  });
+  all.sort((a, b) => b.score - a.score);
+  document.getElementById('top-picks-list').innerHTML = all.slice(0, 8).map((item, i) => {
+    const sig = getSignal(item.score), col = scoreColor(item.score);
+    return `<div class="pick-row">
+      <div class="pick-rank ${i<3?'top':''}">${i+1}</div>
+      <div class="pick-body">
+        <div class="pick-name">${item.name}<span class="chip ${item.type==='crypto'?'chip-crypto':'chip-stock'}">${item.type}</span><span class="sig ${sig.cls}" style="font-size:9px;padding:2px 6px">${sig.label}</span></div>
+        <div class="pick-meta">${item.sym} · ${item.thesis}</div>
+        <div class="pick-bar"><div class="pick-bar-fill" style="width:${item.score}%;background:${col}"></div></div>
+      </div>
+      <div style="flex-shrink:0;text-align:center">
+        <div class="pick-score" style="color:${col}">${item.score}</div>
+        <div style="font-size:9px;color:var(--muted)">/ 100</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STRATEGY SECTION RENDERER
+// ═══════════════════════════════════════════════════════════════════
+
+function renderStrategySection() {
+  const stAssets = [], ltAssets = [];
+
+  // ── CRYPTO assets ──
+  cryptoData.forEach(coin => {
+    const meta = CRYPTO_META[coin.id];
+    if (!meta) return;
+    const p24 = coin.price_change_percentage_24h_in_currency || 0;
+    const p7  = coin.price_change_percentage_7d_in_currency  || 0;
+    const vtm = coin.total_volume / coin.market_cap * 100; // percentage form, matches scoreShortTerm thresholds (12, 7, 3, 1)
+    const rsi = rsiCache['CRYPTO_' + coin.id];
+    const sentKey = coin.symbol.toUpperCase();
+    const sent = sentimentCache[sentKey] !== undefined ? sentimentCache[sentKey] : null;
+    const st = scoreShortTerm(meta, rsi, sent, p24, p7, vtm);
+    const lt = scoreLongTerm(meta, 'crypto', null);
+    stAssets.push({ id: coin.id, name: coin.name, sym: coin.symbol.toUpperCase(), type: 'crypto', price: fmtPrice(coin.current_price), pct: p24, stScore: st.total, st, ltScore: lt.total, lt, meta, rsi, sent });
+    ltAssets.push({ id: coin.id, name: coin.name, sym: coin.symbol.toUpperCase(), type: 'crypto', price: fmtPrice(coin.current_price), pct: p24, stScore: st.total, st, ltScore: lt.total, lt, meta, rsi, sent });
+  });
+
+  // ── STOCK assets ──
+  Object.keys(stockScores).forEach(sym => {
+    const { manual, live } = stockScores[sym];
+    const p24 = live ? live.change : 0;
+    const rsi  = rsiCache[sym];
+    const sent = sentimentCache[sym] !== undefined ? sentimentCache[sym] : null;
+    const ov   = overviewCache[sym] || null;
+    const st = scoreShortTerm(manual, rsi, sent, p24, p24, null); // p7 not available for stocks — use p24 for both to avoid deflating momentum
+    const lt = scoreLongTerm(manual, 'stock', ov);
+    const price = live ? '$' + live.price.toFixed(2) : '—';
+    stAssets.push({ id: sym, name: manual.name, sym, type: 'stock', price, pct: p24, stScore: st.total, st, ltScore: lt.total, lt, meta: manual, rsi, sent, ov });
+    ltAssets.push({ id: sym, name: manual.name, sym, type: 'stock', price, pct: p24, stScore: st.total, st, ltScore: lt.total, lt, meta: manual, rsi, sent, ov });
+  });
+
+  stAssets.sort((a, b) => b.stScore - a.stScore);
+  ltAssets.sort((a, b) => b.ltScore - a.ltScore);
+
+  document.getElementById('st-panel').innerHTML = stAssets.slice(0, 8).map((a, i) => buildSTCard(a, i)).join('');
+  document.getElementById('lt-panel').innerHTML = ltAssets.slice(0, 8).map((a, i) => buildLTCard(a, i)).join('');
+
+  const stTop = stAssets[0];
+  const ltTop = ltAssets[0];
+  document.getElementById('st-badge').innerHTML = stTop ? `<span class="sig sig-sb" style="font-size:10px">Top: ${stTop.sym}</span>` : '';
+  document.getElementById('lt-badge').innerHTML = ltTop ? `<span class="sig sig-b" style="font-size:10px">Top: ${ltTop.sym}</span>` : '';
+}
+
+function rankCls(i) {
+  if (i === 0) return 'gold'; if (i === 1) return 'silver'; if (i === 2) return 'bronze'; return '';
+}
+
+function buildSTCard(a, i) {
+  const meta = a.meta, col = scoreColor(a.stScore), sig = getSignal(a.stScore);
+  const rsiVal = a.rsi !== null && a.rsi !== undefined ? a.rsi : null;
+  const rsiC   = rsiColor(rsiVal);
+  const rsiPill = rsiVal !== null
+    ? `<span class="pill pill-blue">RSI: <span style="color:${rsiC};font-weight:800">${rsiVal}</span>${rsiVal < 30 ? ' 🔥' : rsiVal > 70 ? ' ⚠️' : ''}</span>`
+    : `<span class="pill pill-gray">RSI: click Analyse</span>`;
+  const sentLbl = sentimentLabel(a.sent);
+  const sentPill = sentLbl ? `<span class="pill ${sentLbl.cls}">Sent: ${sentLbl.label}</span>` : `<span class="pill pill-gray">Sent: pending</span>`;
+  const momColor = a.pct >= 0 ? 'var(--green)' : 'var(--red)';
+  return `<div class="si">
+    <div class="si-top">
+      <div class="si-rank ${rankCls(i)}">${i+1}</div>
+      <div class="si-body">
+        <div class="si-name">
+          ${a.name}
+          <span class="chip ${a.type==='crypto'?'chip-crypto':'chip-stock'}">${a.type}</span>
+          <span class="sig ${sig.cls}" style="font-size:9px;padding:2px 6px">${sig.label}</span>
+        </div>
+        <div class="si-sub">${a.sym} · ${a.price} · <span style="color:${momColor};font-weight:600">${fmtPct(a.pct)} 24h</span></div>
+      </div>
+      <div class="si-score-block">
+        <div class="si-score" style="color:${col}">${a.stScore}</div>
+        <div class="si-score-lbl">ST Score</div>
+      </div>
+    </div>
+    <div class="metric-pills">
+      ${rsiPill}
+      ${sentPill}
+      <span class="pill ${a.pct >= 0 ? 'pill-green' : 'pill-red'}">Mom: ${fmtPct(a.pct)}</span>
+      <span class="pill ${riskCls(meta.stRisk) === 'risk-low' ? 'pill-green' : riskCls(meta.stRisk) === 'risk-high' || riskCls(meta.stRisk) === 'risk-vhigh' ? 'pill-red' : 'pill-yellow'}">Risk: ${meta.stRisk||'Med'}</span>
+      <span class="pill pill-purple">⏱ ${meta.stHorizon||'1–2 wks'}</span>
+    </div>
+    <div class="si-note">${meta.stNote||'Near-term momentum analysis.'}</div>
+    <div class="si-strategy"><strong>Strategy:</strong> ${meta.stStrategy||'Monitor momentum for entry.'}</div>
+  </div>`;
+}
+
+function buildLTCard(a, i) {
+  const meta = a.meta, col = scoreColor(a.ltScore), sig = getSignal(a.ltScore);
+  const lt = a.lt;
+  const fundColor = scoreColor(lt.fundScore);
+  // Show P/E / revenue from overview if available
+  let fundamentalPills = '';
+  if (lt.pe && !isNaN(lt.pe)) fundamentalPills += `<span class="pill pill-blue">P/E: ${parseFloat(lt.pe).toFixed(0)}</span>`;
+  if (lt.revenueGrowth) fundamentalPills += `<span class="pill pill-green">Rev Growth: +${lt.revenueGrowth}%</span>`;
+  if (lt.margin) fundamentalPills += `<span class="pill pill-purple">Margin: ${lt.margin}%</span>`;
+  if (lt.analystTarget) fundamentalPills += `<span class="pill pill-yellow">Analyst Target: $${parseFloat(lt.analystTarget).toFixed(0)}</span>`;
+  if (!fundamentalPills) {
+    fundamentalPills = `<span class="pill pill-gray">Fundamentals pending — click Analyse</span>`;
+  }
+  const moatStars = '★'.repeat(Math.round(lt.moatScore / 25)).padEnd(4, '☆');
+  return `<div class="si">
+    <div class="si-top">
+      <div class="si-rank ${rankCls(i)}">${i+1}</div>
+      <div class="si-body">
+        <div class="si-name">
+          ${a.name}
+          <span class="chip ${a.type==='crypto'?'chip-crypto':'chip-stock'}">${a.type}</span>
+          <span class="sig ${sig.cls}" style="font-size:9px;padding:2px 6px">${sig.label}</span>
+        </div>
+        <div class="si-sub">${a.sym} · ${a.price} · Moat: <span style="color:var(--yellow);letter-spacing:1px">${moatStars}</span></div>
+      </div>
+      <div class="si-score-block">
+        <div class="si-score" style="color:${col}">${a.ltScore}</div>
+        <div class="si-score-lbl">LT Score</div>
+      </div>
+    </div>
+    <div class="metric-pills">
+      ${fundamentalPills}
+      <span class="pill ${riskCls(meta.ltRisk) === 'risk-low' ? 'pill-green' : riskCls(meta.ltRisk) === 'risk-high' ? 'pill-red' : 'pill-yellow'}">Risk: ${meta.ltRisk||'Med'}</span>
+      <span class="pill pill-purple">📅 ${meta.ltHorizon||'6–12 months'}</span>
+    </div>
+    <div class="si-note">${meta.ltNote||'Long-term fundamental investment thesis.'}</div>
+    <div class="si-strategy"><strong>Accumulation strategy:</strong> ${meta.ltStrategy||'Dollar-cost average on dips.'}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATIC PANELS
+// ═══════════════════════════════════════════════════════════════════
+
+function renderMacro() {
+  document.getElementById('macro-panel').innerHTML = MACRO_INDICATORS.map(m => `
+    <div class="macro-row">
+      <div class="macro-label"><div class="indicator-dot dot-${m.dot}"></div>${m.label}</div>
+      <div style="text-align:right"><div class="macro-val">${m.value}</div><div class="macro-context">${m.note}</div></div>
+    </div>`).join('') +
+    `<div style="margin-top:10px;padding:10px;background:var(--bg2);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.6">
+      <strong style="color:var(--text)">Assessment:</strong> <span style="color:var(--green)">Moderately bullish</span> for risk assets. FOMC today is the key near-term catalyst — dovish language would accelerate the risk-on trade.
+    </div>`;
+}
+
+function renderCatalysts() {
+  document.getElementById('catalysts-panel').innerHTML = CATALYSTS.map(c => `
+    <div class="catalyst-row">
+      <div class="catalyst-top"><span class="catalyst-tag tag-${c.type}">${c.type.toUpperCase()}</span><div class="catalyst-title">${c.title}</div></div>
+      <div class="catalyst-desc">${c.desc}</div>
+      <div class="catalyst-assets">${c.assets.map(a => `<span class="asset-tag">${a}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function renderMethodology() {
+  const stMethods = [
+    { label:'RSI Signal', weight:'22%', color:'#10b981', desc:'Oversold (<30) = strong bounce signal. Overbought (>70) = risky entry. Sweet spot: 38–55.' },
+    { label:'News Sentiment', weight:'20%', color:'#06b6d4', desc:'Alpha Vantage AI-scored news relevance. Weighted by article relevance score per ticker.' },
+    { label:'Momentum Quality', weight:'28%', color:'#10b981', desc:'24h + 7d returns. Sweet spot: +3–15%. Overextended (>25%) = risky. Dip (-3 to -8%) = buy opp.' },
+    { label:'Volume Surge', weight:'15%', color:'#f59e0b', desc:'Volume/market cap ratio. Spike = conviction behind price move.' },
+    { label:'Near-Term Catalyst', weight:'15%', color:'#8b5cf6', desc:'Known events in next 2 weeks: earnings, Fed meetings, product launches, regulatory decisions.' },
+  ];
+  const ltMethods = [
+    { label:'Fundamentals', weight:'28%', color:'#06b6d4', desc:'P/E ratio, revenue growth YoY, profit margins, analyst price targets from Alpha Vantage Overview.' },
+    { label:'Innovation', weight:'25%', color:'#10b981', desc:'R&D leadership, product pipeline depth, technology moat, addressable market expansion rate.' },
+    { label:'Macro Align', weight:'20%', color:'#06b6d4', desc:'How well the asset benefits from the 6–12 month macro trajectory (rate cycle, dollar, growth).' },
+    { label:'Policy/Reg', weight:'15%', color:'#f59e0b', desc:'Government contracts, IRA/defense bills, crypto regulatory clarity, policy tailwinds.' },
+    { label:'Competitive Moat', weight:'12%', color:'#8b5cf6', desc:'Durability of competitive advantage: network effects, switching costs, IP, brand.' },
+  ];
+  document.getElementById('method-panel').innerHTML = `
+    <div style="font-size:11px;color:var(--yellow);font-weight:700;margin-bottom:8px">⚡ Short-Term Scoring Weights</div>
+    <div class="method-grid" style="grid-template-columns:1fr 1fr">${stMethods.map(m=>`<div class="method-item" style="border-color:${m.color}"><div class="method-weight" style="color:${m.color}">${m.weight}</div><div class="method-item-title">${m.label}</div><div class="method-item-desc">${m.desc}</div></div>`).join('')}</div>
+    <hr class="divider" style="margin:12px 0">
+    <div style="font-size:11px;color:var(--cyan);font-weight:700;margin-bottom:8px">🏦 Long-Term Scoring Weights</div>
+    <div class="method-grid" style="grid-template-columns:1fr 1fr">${ltMethods.map(m=>`<div class="method-item" style="border-color:${m.color}"><div class="method-weight" style="color:${m.color}">${m.weight}</div><div class="method-item-title">${m.label}</div><div class="method-item-desc">${m.desc}</div></div>`).join('')}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6">
+      <strong style="color:var(--dim)">Thresholds:</strong>
+      <span style="color:#34d399;margin:0 6px">76+ = Strong Buy</span>
+      <span style="color:#6ee7b7;margin:0 6px">62–75 = Buy</span>
+      <span style="color:#fbbf24;margin:0 6px">48–61 = Hold</span>
+      <span style="color:#f87171;margin-left:6px">&lt;48 = Avoid</span>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CACHE HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
+function saveCache(key, data) {
+  try { localStorage.setItem('ae_c_' + key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
+function loadCache(key, maxAgeMs) {
+  try {
+    const raw = localStorage.getItem('ae_c_' + key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    return (Date.now() - ts < maxAgeMs) ? data : null;
+  } catch(e) { return null; }
+}
+
+// Render stock cards instantly from the cached stockScores object (no API calls)
+function renderStocksFromCache() {
+  const grid = document.getElementById('stock-grid');
+  if (!grid || !Object.keys(stockScores).length) return;
+  grid.innerHTML = '';
+  Object.entries(stockScores)
+    .sort(([, a], [, b]) => (b.s?.total || 0) - (a.s?.total || 0))
+    .forEach(([sym, { s, manual, live }]) => {
+      const el = document.createElement('div');
+      el.className = 'asset-card'; el.id = 'sc-' + sym;
+      el.innerHTML = buildStockCardHtml(sym, s, manual, live);
+      grid.appendChild(el);
+    });
+  renderStrategySection();
+  if (cryptoScored.length) renderTopPicks(cryptoScored);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT & CONTROLS
+// ═══════════════════════════════════════════════════════════════════
+
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.classList.remove('show'); _toastTimer = null; }, 4000);
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  document.getElementById('hdr-updated').textContent = 'Loading...';
+  try {
+    await Promise.all([fetchGlobal(), fetchCrypto()]);
+    await renderStocks();
+    document.getElementById('hdr-updated').textContent = new Date().toLocaleTimeString();
+    showToast('Data refreshed ✓');
+    // Re-run deep analysis at most once per 30 minutes to protect AV API quota
+    const now = Date.now();
+    if (deepAnalysisDone && (!refreshAll._lastDeep || now - refreshAll._lastDeep > 30 * 60 * 1000)) {
+      refreshAll._lastDeep = now;
+      await runDeepAnalysis();
+    }
+  } catch(e) {
+    showToast('⚠️ Refresh failed — CoinGecko may be rate limiting. Retry in 60s.');
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+async function init() {
+  // ── Instant cache render (zero API calls) ─────────────────────────
+  const cachedGlobal = loadCache('global', 10 * 60 * 1000);
+  const cachedCrypto = loadCache('crypto', 10 * 60 * 1000);
+  const cachedStocks = loadCache('stocks', 15 * 60 * 1000);
+  if (cachedGlobal) applyGlobalData(cachedGlobal);
+  if (cachedCrypto) { cryptoData = cachedCrypto; cryptoData.forEach(c => { rsiCache['CRYPTO_' + c.id] = calcRSI(c.sparkline_in_7d?.price || []); }); renderCrypto(); }
+  if (cachedStocks) { stockScores = cachedStocks; renderStocksFromCache(); }
+
+  renderMacro();
+  renderCatalysts();
+  renderMethodology();
+
+  // ── Live fetch in parallel — updates each section as data arrives ──
+  const liveProms = [
+    fetchGlobal().catch(() => {}),
+    fetchCrypto().catch(() => {}),
+  ];
+  // Only do full stock refresh if cache was stale; otherwise refresh quietly after a short delay
+  if (!cachedStocks) {
+    liveProms.push(renderStocks());
+  } else {
+    setTimeout(() => renderStocks().catch(() => {}), 3000); // quiet background refresh
+  }
+  await Promise.all(liveProms);
+
+  document.getElementById('hdr-updated').textContent = new Date().toLocaleTimeString();
+  fetchMacroNews(); // non-blocking — populates news columns
+
+  // ── Continuous auto-refresh ────────────────────────────────────────
+  setInterval(() => fetchGlobal().catch(() => {}),  90 * 1000); // global stats every 90s
+  setInterval(() => fetchCrypto().catch(() => {}),  90 * 1000); // crypto cards every 90s
+  setInterval(refreshAll,                     5 * 60 * 1000);   // full refresh  every 5 min
+  setInterval(fetchMacroNews,                 4 * 60 * 1000);   // news columns  every 4 min
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TECHNICAL INDICATORS
+// ═══════════════════════════════════════════════════════════════════
+
+function ema(arr, p) {
+  if (arr.length < p) return arr.map(() => null);
+  const k = 2 / (p + 1), out = new Array(arr.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < p; i++) sum += arr[i];
+  out[p - 1] = sum / p;
+  for (let i = p; i < arr.length; i++) out[i] = arr[i] * k + out[i - 1] * (1 - k);
+  return out;
+}
+
+function rsiArr(closes, p = 14) {
+  if (closes.length < p + 1) return closes.map(() => null);
+  const out = new Array(closes.length).fill(null);
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= p; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  let ag = gains / p, al = losses / p;
+  out[p] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+  for (let i = p + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    const g = d > 0 ? d : 0, l = d < 0 ? -d : 0;
+    ag = (ag * (p - 1) + g) / p;
+    al = (al * (p - 1) + l) / p;
+    out[i] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+  }
+  return out;
+}
+
+function macdArr(closes, fast = 12, slow = 26, sig = 9) {
+  const ef = ema(closes, fast), es = ema(closes, slow);
+  const ml = closes.map((_, i) => ef[i] != null && es[i] != null ? ef[i] - es[i] : null);
+  // Only compute signal line from valid MACD values (don't zero nulls — that corrupts early EMA)
+  const firstValid = ml.findIndex(v => v != null);
+  const slRaw = new Array(closes.length).fill(null);
+  if (firstValid >= 0) {
+    const mlSlice = ml.slice(firstValid).map(v => v ?? 0);
+    const slSlice = ema(mlSlice, sig);
+    slSlice.forEach((v, i) => { slRaw[firstValid + i] = v; });
+  }
+  const hist = ml.map((v, i) => v != null && slRaw[i] != null ? v - slRaw[i] : null);
+  return { ml, sl: slRaw, hist };
+}
+
+function bbArr(closes, p = 20, mult = 2) {
+  return closes.map((_, i) => {
+    if (i < p - 1) return null;
+    const sl = closes.slice(i - p + 1, i + 1);
+    const mean = sl.reduce((a, b) => a + b) / p;
+    const sd = Math.sqrt(sl.reduce((a, b) => a + (b - mean) ** 2, 0) / p);
+    return { upper: mean + mult * sd, mid: mean, lower: mean - mult * sd };
+  });
+}
+
+function vwapArr(candles) {
+  let cv = 0, ctp = 0;
+  return candles.map(c => {
+    const tp = (c.high + c.low + c.close) / 3;
+    ctp += tp * c.volume; cv += c.volume;
+    return cv ? ctp / cv : tp;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SIGNAL GENERATOR
+// ═══════════════════════════════════════════════════════════════════
+
+function generateSignals(candles, ind) {
+  const last = candles[candles.length - 1];
+  const sigs = [];
+  const push = (indicator, type, reason, score) => sigs.push({ indicator, type, reason, score });
+
+  // RSI
+  const rsi = ind.rsi?.filter(v => v != null).slice(-1)[0];
+  if (rsi != null) {
+    if      (rsi < 30) push('RSI', 'BUY',  `Oversold — ${rsi.toFixed(0)}`, 2);
+    else if (rsi < 45) push('RSI', 'BUY',  `Near oversold — ${rsi.toFixed(0)}`, 1);
+    else if (rsi > 72) push('RSI', 'SELL', `Overbought — ${rsi.toFixed(0)}`, -2);
+    else if (rsi > 60) push('RSI', 'SELL', `Elevated — ${rsi.toFixed(0)}`, -1);
+    else               push('RSI', 'NEUT', `Neutral — ${rsi.toFixed(0)}`, 0);
+  }
+
+  // MACD histogram crossover
+  const hist = ind.macd?.hist?.filter(v => v != null);
+  if (hist && hist.length >= 2) {
+    const [p, c] = [hist[hist.length - 2], hist[hist.length - 1]];
+    if      (p < 0 && c > 0) push('MACD', 'BUY',  'Bullish crossover ↑', 2);
+    else if (p > 0 && c < 0) push('MACD', 'SELL', 'Bearish crossover ↓', -2);
+    else if (c > 0)           push('MACD', 'BUY',  `Histogram +${c.toFixed(4)}`, 1);
+    else if (c < 0)           push('MACD', 'SELL', `Histogram ${c.toFixed(4)}`, -1);
+    else                      push('MACD', 'NEUT', 'Flat', 0);
+  }
+
+  // Bollinger Bands
+  const bb = ind.bb?.filter(v => v != null).slice(-1)[0];
+  if (bb) {
+    const bw = ((bb.upper - bb.lower) / bb.mid * 100).toFixed(1);
+    if      (last.close < bb.lower) push('BB', 'BUY',  `Below lower band (${bw}% width)`, 2);
+    else if (last.close > bb.upper) push('BB', 'SELL', `Above upper band (${bw}% width)`, -2);
+    else if (parseFloat(bw) < 2.5)  push('BB', 'NEUT', `Squeeze (${bw}%) — breakout near`, 0);
+    else                             push('BB', 'NEUT', `Inside bands (${bw}% width)`, 0);
+  }
+
+  // EMA trend
+  const e20 = ind.ema20?.filter(v => v != null).slice(-1)[0];
+  const e50 = ind.ema50?.filter(v => v != null).slice(-1)[0];
+  if (e20 && e50) {
+    if      (last.close > e20 && e20 > e50) push('EMA',  'BUY',  'Price > EMA20 > EMA50 ↑', 1);
+    else if (last.close < e20 && e20 < e50) push('EMA',  'SELL', 'Price < EMA20 < EMA50 ↓', -1);
+    else                                     push('EMA',  'NEUT', 'Mixed EMA alignment', 0);
+  }
+
+  // Volume
+  if (candles.length > 10) {
+    const avgVol = candles.slice(-20).reduce((a, c) => a + c.volume, 0) / Math.min(20, candles.length);
+    const ratio  = last.volume / avgVol;
+    if      (ratio > 2.0) push('Volume', last.close >= last.open ? 'BUY' : 'SELL', `Surge ${ratio.toFixed(1)}× avg`, last.close >= last.open ? 1 : -1);
+    else if (ratio < 0.4) push('Volume', 'NEUT', `Low ${ratio.toFixed(1)}× avg`, 0);
+    else                  push('Volume', 'NEUT', `Normal ${ratio.toFixed(1)}× avg`, 0);
+  }
+
+  const score = sigs.reduce((a, s) => a + s.score, 0);
+  const confluence =
+    score >=  5 ? { label:'STRONG BUY',  cls:'sig-sb', color:'#10b981' } :
+    score >=  2 ? { label:'BUY',          cls:'sig-b',  color:'#34d399' } :
+    score >=  1 ? { label:'LEAN LONG',    cls:'sig-b',  color:'#6ee7b7' } :
+    score <= -5 ? { label:'STRONG SELL',  cls:'sig-a',  color:'#ef4444' } :
+    score <= -2 ? { label:'SELL',         cls:'sig-a',  color:'#f87171' } :
+    score <= -1 ? { label:'LEAN SHORT',   cls:'sig-a',  color:'#fca5a5' } :
+                  { label:'NO EDGE',      cls:'sig-h',  color:'#64748b' };
+
+  return { sigs, confluence, score };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANALYSIS PARAGRAPH GENERATOR
+// ═══════════════════════════════════════════════════════════════════
+
+function generateAnalysisText(candles, rsi, bbVals, e20, e50, macdData, extra) {
+  const last   = candles[candles.length - 1];
+  const rsiVal = rsi?.filter(v => v != null).slice(-1)[0];
+  const bb     = bbVals?.filter(v => v != null).slice(-1)[0];
+  const ema20  = e20?.filter(v => v != null).slice(-1)[0];
+  const ema50  = e50?.filter(v => v != null).slice(-1)[0];
+  const hist   = macdData?.hist?.filter(v => v != null) || [];
+  const hLast  = hist.slice(-1)[0];
+  const hPrev  = hist.slice(-2)[0];
+  const avgVol = candles.slice(-20).reduce((a, c) => a + c.volume, 0) / Math.min(20, candles.length);
+  const volR   = last.volume / avgVol;
+  const up     = last.close >= last.open;
+
+  // ── BUYING PRESSURE (replaces RSI jargon) ──
+  let pressureSentence = '';
+  if (rsiVal != null) {
+    if      (rsiVal < 25) pressureSentence = `Buyers have almost completely abandoned this asset — it has been sold down so hard that sellers are running out of firepower. Historically, this is exactly where violent bounces start. The risk of buying here is low relative to the potential snap-back.`;
+    else if (rsiVal < 35) pressureSentence = `The asset has been heavily sold off and is in oversold territory — most of the panic selling has already happened and buyers are beginning to return. Short-term, the path of least resistance is starting to shift upward.`;
+    else if (rsiVal < 45) pressureSentence = `Selling pressure is easing and cautious buyers are stepping back in. The market is recovering from weakness but hasn't built enough conviction yet — it needs a few more strong candles to confirm the shift.`;
+    else if (rsiVal < 57) pressureSentence = `Buying and selling pressure are roughly balanced right now — no side has the clear advantage. The market is waiting for a catalyst before it decides its next move, so patience is key.`;
+    else if (rsiVal < 67) pressureSentence = `Buyers are firmly in control and the trend is healthy. This is not an overheated reading — it means demand is solid and the move can continue without an immediate pullback being likely.`;
+    else if (rsiVal < 76) pressureSentence = `Buyers have driven this asset up strongly and it's getting stretched. If you're already holding, this is a good position to be in. If you're looking to enter fresh, waiting for a small dip would give you a much better risk/reward.`;
+    else                  pressureSentence = `The asset is overheated — it has been bought up so aggressively in a short period that a pause or pullback is the most probable next move. Entering now means buying near the top of a surge, which carries real downside risk in the near term.`;
+  }
+
+  // ── MOMENTUM DIRECTION (replaces MACD jargon) ──
+  let momentumSentence = '';
+  if (hLast != null && hPrev != null) {
+    if      (hPrev < 0 && hLast > 0) momentumSentence = `Short-term momentum has just flipped from negative to positive — this is a genuine direction change, not just a blip, and is one of the cleaner signals that a new move upward is beginning.`;
+    else if (hPrev > 0 && hLast < 0) momentumSentence = `Short-term momentum has just turned negative after being positive — the upward move has stalled and selling pressure is taking over. This is a warning sign for anyone holding.`;
+    else if (hLast > 0 && hLast > hPrev) momentumSentence = `Momentum is rising and accelerating to the upside — buyers aren't just present, they're getting more aggressive. This gives the current move real staying power.`;
+    else if (hLast > 0 && hLast < hPrev) momentumSentence = `The upward move is still in place but losing energy — buyers are less aggressive than they were. Not a reason to sell yet, but watch for whether momentum continues to fade.`;
+    else if (hLast < 0 && hLast > hPrev) momentumSentence = `Downward momentum is weakening — sellers are still in control but becoming less aggressive. This can be an early sign that a floor is forming, though it's too early to call a reversal.`;
+    else                                  momentumSentence = `Selling momentum is firmly in place and getting stronger — there's no sign of the downtrend slowing. Buying into this without a clear reversal signal is fighting the trend.`;
+  }
+
+  // ── VOLUME CONVICTION ──
+  let volSentence = '';
+  if      (volR > 2.5) volSentence = up
+    ? `Importantly, this move is backed by exceptionally high trading volume — ${volR.toFixed(1)}× the recent average. When big price moves happen on this kind of volume, it usually means institutional money is behind it, and the move is much more likely to stick.`
+    : `The selling here is backed by very high volume (${volR.toFixed(1)}× average) — this is not a small panic, it's a meaningful distribution event. Heavy-volume drops take longer to recover from.`;
+  else if (volR > 1.5) volSentence = `Volume is above average at ${volR.toFixed(1)}× the recent norm, which adds weight to the current price action. This isn't random noise — there's real conviction behind the move.`;
+  else if (volR < 0.4) volSentence = `Trading volume is extremely thin right now — ${volR.toFixed(1)}× the recent average. Price moves on this little activity are unreliable and often reverse quickly once real volume returns.`;
+  else                 volSentence = `Volume is at normal levels — no unusual buying or selling interest is visible. The move is not being driven by any special surge in activity.`;
+
+  // ── SHORT-TERM UPSIDE / DOWNSIDE (price range context) ──
+  let stProfit = '';
+  if (bb && last?.close) {
+    const upToUpper   = ((bb.upper - last.close) / last.close * 100);
+    const upToMid     = ((bb.mid   - last.close) / last.close * 100);
+    const downToLower = ((last.close - bb.lower) / last.close * 100);
+    const downToMid   = ((last.close - bb.mid)   / last.close * 100);
+    if (last.close > bb.upper) {
+      stProfit = `In terms of near-term entry, the price has already pushed beyond its normal trading range — there's ${downToMid.toFixed(1)}% of downside back to the midpoint (${fmtPrice(bb.mid)}) before you'd find natural support. Entering here means you're buying at the expensive end of the range.`;
+    } else if (last.close < bb.lower) {
+      stProfit = `The price is below its normal trading range, which historically creates a bounce setup — the midpoint at ${fmtPrice(bb.mid)} is ${upToMid.toFixed(1)}% above current price and is a realistic near-term target. The upper end of the range (${fmtPrice(bb.upper)}) would represent ${upToUpper.toFixed(1)}% upside if the bounce is strong.`;
+    } else {
+      const rsiRoom = rsiVal != null ? Math.max(0, 70 - rsiVal) : null;
+      stProfit = `Near-term, there's ${upToUpper.toFixed(1)}% of room to the top of the current trading range (${fmtPrice(bb.upper)})${rsiRoom !== null && rsiRoom > 5 ? ` and buying pressure still has room to run before becoming overheated` : ` but buying pressure is already elevated, so upside may be limited`}. If the trade goes wrong, the natural support floor sits ${downToLower.toFixed(1)}% below at ${fmtPrice(bb.lower)}.`;
+    }
+  }
+
+  // ── TREND HEALTH (replaces BB/EMA jargon) ──
+  let trendSentence = '';
+  if (bb) {
+    const bw  = ((bb.upper - bb.lower) / bb.mid * 100);
+    const pos = (last.close - bb.lower) / (bb.upper - bb.lower);
+    if      (parseFloat(bw) < 2.5) trendSentence = `The price has barely moved in recent sessions and is coiling into a very tight range — this kind of calm almost always explodes into a sharp move. No one can tell you which direction yet, but something big is coming.`;
+    else if (last.close > bb.upper) trendSentence = `The price is running above its normal range — it's showing strong momentum but is stretched. Expect it to cool off and pull back toward its midpoint (${fmtPrice(bb.mid)}) at some point before the next leg up, if the trend is healthy.`;
+    else if (last.close < bb.lower) trendSentence = `The price is trading below its normal range. For long-term holders, this can represent value — the mean tends to pull price back up over time. The midpoint around ${fmtPrice(bb.mid)} is where it would need to return to look constructive again.`;
+    else if (pos > 0.65)            trendSentence = `The price is sitting in the upper portion of its recent trading range — this is where strong, healthy trends tend to stay. The midpoint at ${fmtPrice(bb.mid)} is the natural place to look for support if there's a dip.`;
+    else if (pos < 0.35)            trendSentence = `The price is sitting in the lower portion of its recent trading range and needs to reclaim the midpoint (${fmtPrice(bb.mid)}) to build a case for a recovery. Until it does, the path of least resistance is still sideways to down.`;
+    else                            trendSentence = `The price is in the middle of its recent trading range — no extreme reading in either direction. The next move will depend on whether buyers or sellers push it toward a boundary.`;
+  }
+
+  // ── UNDERLYING TREND DIRECTION (replaces EMA jargon) ──
+  let emaSentence = '';
+  if (ema20 != null && ema50 != null) {
+    const a20 = last.close > ema20, a50 = last.close > ema50, goldCross = ema20 > ema50;
+    if      (a20 && a50 && goldCross)    emaSentence = `The underlying trend is solidly upward — the price is above both its short-term (${fmtPrice(ema20)}) and medium-term (${fmtPrice(ema50)}) averages, and the short-term average is above the medium-term. This is the healthiest possible trend structure for a long-term investor. Any dip toward ${fmtPrice(ema20)} is historically a buying opportunity, not a warning sign.`;
+    else if (!a20 && !a50 && !goldCross) emaSentence = `The underlying trend is firmly down — the price is below both its short-term (${fmtPrice(ema20)}) and medium-term (${fmtPrice(ema50)}) averages, and the trend is confirmed. For long-term investors, it's worth waiting for the price to reclaim ${fmtPrice(ema20)} before adding exposure — trying to catch a falling knife here carries unnecessary risk.`;
+    else if (a20 && !a50)                emaSentence = `The short-term picture is improving — the price has reclaimed its recent average (${fmtPrice(ema20)}) — but the medium-term trend (${fmtPrice(ema50)}) is still pointing down. This is an early recovery signal, not a confirmed reversal. A close above ${fmtPrice(ema50)} would mark a genuine trend change.`;
+    else if (!a20 && a50)                emaSentence = `This is a short-term dip within a larger uptrend — the medium-term average (${fmtPrice(ema50)}) is still rising and providing support below. For long-term investors, pullbacks like this inside a healthy uptrend are often good entry points.`;
+    else                                 emaSentence = `The trend signals are mixed right now — the price is at a pivotal level where both the short and medium-term averages are converging. The next few sessions will decide whether this becomes a breakout or a breakdown.`;
+  }
+
+  // ── LONG-TERM PROFIT POTENTIAL ──
+  let ltProfit = '';
+  const exData = extra || {};
+  if (exData.ath && exData.athPct != null && last?.close) {
+    const pctBelow = Math.abs(exData.athPct).toFixed(0);
+    const mult     = (exData.ath / last.close).toFixed(2);
+    ltProfit = `For long-term investors, this asset is still ${pctBelow}% below its all-time high of ${fmtPrice(exData.ath)} — if it simply returns to where it was, that's ${pctBelow}% return, or ${mult}× your money. That ceiling may not be the end either if the next bull cycle pushes further.`;
+  } else if (exData.analystTarget && last?.close) {
+    const upside = ((exData.analystTarget - last.close) / last.close * 100);
+    const dir2   = upside >= 0 ? 'upside' : 'downside';
+    ltProfit = `Wall Street analysts have a consensus price target of ${fmtPrice(exData.analystTarget)}, which implies ${Math.abs(upside).toFixed(0)}% ${dir2} from where it trades today. That target represents the average expectation of professional analysts covering this company.`;
+  }
+
+  // ── ASSEMBLE ──
+  const stPara = [pressureSentence, momentumSentence, volSentence, stProfit].filter(Boolean).join(' ');
+  const ltPara = [trendSentence, emaSentence, ltProfit].filter(Boolean).join(' ');
+
+  return { stPara, ltPara };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHART ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+const BINANCE_SYM = {
+  bitcoin:'BTCUSDT', ethereum:'ETHUSDT', solana:'SOLUSDT',
+  dogecoin:'DOGEUSDT', binancecoin:'BNBUSDT', chainlink:'LINKUSDT',
+  'avalanche-2':'AVAXUSDT', sui:'SUIUSDT', arbitrum:'ARBUSDT'
+};
+
+const CS = {  // chart state
+  mainC: null, rsiC: null, macdC: null,
+  series: {},
+  ws: null, wsAlive: false,
+  candles: [],
+  assetId: null, isStock: false,
+  interval: '15m',
+  stockTimer: null,
+  extra: { ath: null, athPct: null, analystTarget: null, symbol: null }
+};
+
+function chartOpts(h) {
+  return {
+    height: h,
+    layout:      { background: { color: '#000000' }, textColor: '#64748b' },
+    grid:        { vertLines: { color: '#181818' }, horzLines: { color: '#181818' } },
+    crosshair:   { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#272727', scaleMargins: { top: 0.1, bottom: 0.1 } },
+    timeScale:   { borderColor: '#272727', timeVisible: true, secondsVisible: false },
+    handleScroll: true, handleScale: true,
+  };
+}
+
+function buildCharts() {
+  ['price-chart','rsi-chart','macd-chart'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
+  });
+
+  CS.mainC = LightweightCharts.createChart(document.getElementById('price-chart'), chartOpts(320));
+  CS.rsiC  = LightweightCharts.createChart(document.getElementById('rsi-chart'),  chartOpts(85));
+  CS.macdC = LightweightCharts.createChart(document.getElementById('macd-chart'), chartOpts(85));
+
+  // Price chart series
+  CS.series.candle = CS.mainC.addCandlestickSeries({
+    upColor:'#10b981', downColor:'#ef4444',
+    borderUpColor:'#10b981', borderDownColor:'#ef4444',
+    wickUpColor:'#10b981', wickDownColor:'#ef4444'
+  });
+  CS.series.bbUpper  = CS.mainC.addLineSeries({ color:'#06b6d4', lineWidth:1, lineStyle:2, priceLineVisible:false, lastValueVisible:false });
+  CS.series.bbMid    = CS.mainC.addLineSeries({ color:'#334155', lineWidth:1, lineStyle:2, priceLineVisible:false, lastValueVisible:false });
+  CS.series.bbLower  = CS.mainC.addLineSeries({ color:'#06b6d4', lineWidth:1, lineStyle:2, priceLineVisible:false, lastValueVisible:false });
+  CS.series.ema20    = CS.mainC.addLineSeries({ color:'#f59e0b', lineWidth:1, priceLineVisible:false, lastValueVisible:false });
+  CS.series.ema50    = CS.mainC.addLineSeries({ color:'#8b5cf6', lineWidth:1, priceLineVisible:false, lastValueVisible:false });
+  CS.series.vwap     = CS.mainC.addLineSeries({ color:'#06b6d4', lineWidth:1, lineStyle:3, priceLineVisible:false, lastValueVisible:false });
+
+  // RSI chart
+  CS.series.rsi      = CS.rsiC.addLineSeries({ color:'#f59e0b', lineWidth:2, priceLineVisible:false });
+  CS.series.rsi70    = CS.rsiC.addLineSeries({ color:'#ef4444', lineWidth:1, lineStyle:2, priceLineVisible:false, lastValueVisible:false });
+  CS.series.rsi30    = CS.rsiC.addLineSeries({ color:'#10b981', lineWidth:1, lineStyle:2, priceLineVisible:false, lastValueVisible:false });
+
+  // MACD chart
+  CS.series.macdHist = CS.macdC.addHistogramSeries({ priceLineVisible:false });
+  CS.series.macdLine = CS.macdC.addLineSeries({ color:'#10b981', lineWidth:1, priceLineVisible:false, lastValueVisible:false });
+  CS.series.macdSig  = CS.macdC.addLineSeries({ color:'#f97316', lineWidth:1, priceLineVisible:false, lastValueVisible:false });
+
+  // Sync time scales
+  CS.mainC.timeScale().subscribeVisibleLogicalRangeChange(r => {
+    if (r) { CS.rsiC.timeScale().setVisibleLogicalRange(r); CS.macdC.timeScale().setVisibleLogicalRange(r); }
+  });
+
+  // OHLCV on crosshair
+  CS.mainC.subscribeCrosshairMove(p => {
+    const d = p.seriesData?.get(CS.series.candle);
+    if (d) {
+      document.getElementById('ohlcv-bar').innerHTML =
+        `<span><strong>O</strong> ${fmtPrice(d.open)}</span>
+         <span><strong>H</strong> ${fmtPrice(d.high)}</span>
+         <span><strong>L</strong> ${fmtPrice(d.low)}</span>
+         <span><strong>C</strong> <span style="color:${d.close>=d.open?'var(--green)':'var(--red)'}">${fmtPrice(d.close)}</span></span>`;
+    }
+  });
+}
+
+function applyIndicators() {
+  const candles = CS.candles;
+  if (candles.length < 30) return;
+  const times   = candles.map(c => c.time);
+  const closes  = candles.map(c => c.close);
+
+  // BB
+  const bb = bbArr(closes);
+  const toTS = (arr, fn) => arr.map((v, i) => v != null ? { time: times[i], value: fn(v) } : null).filter(Boolean);
+  CS.series.bbUpper.setData(toTS(bb, v => v.upper));
+  CS.series.bbMid.setData(toTS(bb, v => v.mid));
+  CS.series.bbLower.setData(toTS(bb, v => v.lower));
+
+  // EMA
+  const e20 = ema(closes, 20), e50 = ema(closes, 50);
+  CS.series.ema20.setData(e20.map((v, i) => v != null ? { time: times[i], value: v } : null).filter(Boolean));
+  CS.series.ema50.setData(e50.map((v, i) => v != null ? { time: times[i], value: v } : null).filter(Boolean));
+
+  // VWAP
+  const vw = vwapArr(candles);
+  CS.series.vwap.setData(vw.map((v, i) => ({ time: times[i], value: v })));
+
+  // RSI
+  const rsi = rsiArr(closes);
+  CS.series.rsi.setData(rsi.map((v, i) => v != null ? { time: times[i], value: v } : null).filter(Boolean));
+  const rsiRange = [candles[0].time, candles[candles.length - 1].time];
+  CS.series.rsi70.setData([{ time: rsiRange[0], value: 70 }, { time: rsiRange[1], value: 70 }]);
+  CS.series.rsi30.setData([{ time: rsiRange[0], value: 30 }, { time: rsiRange[1], value: 30 }]);
+
+  // MACD
+  const { ml, sl, hist } = macdArr(closes);
+  CS.series.macdHist.setData(hist.map((v, i) => v != null ? { time: times[i], value: v, color: v >= 0 ? '#10b981' : '#ef4444' } : null).filter(Boolean));
+  CS.series.macdLine.setData(ml.map((v, i) => v != null ? { time: times[i], value: v } : null).filter(Boolean));
+  CS.series.macdSig.setData(sl.map((v, i) => v != null ? { time: times[i], value: v } : null).filter(Boolean));
+
+  // Signals sidebar
+  const rsiVals = rsi.filter(v => v != null), bbVals = bb.filter(v => v != null);
+  const macdFiltered = { hist: hist.filter(v => v != null), ml: ml.filter(v => v != null), sl: sl.filter(v => v != null) };
+  renderSignalSidebar({
+    rsi: rsiVals, macd: macdFiltered,
+    bb: bbVals, ema20: e20.filter(v => v != null), ema50: e50.filter(v => v != null)
+  });
+
+  // Analysis paragraphs
+  const { stPara, ltPara } = generateAnalysisText(candles, rsi, bb, e20, e50, macdFiltered, CS.extra);
+  document.getElementById('analysis-st').textContent = stPara || '—';
+  document.getElementById('analysis-lt').textContent = ltPara || '—';
+  document.getElementById('analysis-box').style.display = 'grid';
+}
+
+function renderSignalSidebar(ind) {
+  const { sigs, confluence, score } = generateSignals(CS.candles, ind);
+  const col = confluence.color;
+  document.getElementById('conf-score').innerHTML = `<span style="color:${col}">${score > 0 ? '+' : ''}${score}</span>`;
+  document.getElementById('conf-label').innerHTML = `<span class="sig ${confluence.cls}">${confluence.label}</span>`;
+  document.getElementById('signal-rows').innerHTML = sigs.map(s => {
+    const cls = s.type === 'BUY' ? 'st-buy' : s.type === 'SELL' ? 'st-sell' : 'st-neut';
+    return `<div class="signal-row">
+      <span class="signal-ind">${s.indicator}</span>
+      <span class="signal-val">
+        <span class="signal-type ${cls}">${s.type}</span>
+        <div style="font-size:10px;color:var(--muted)">${s.reason}</div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function setCandleData(candles) {
+  CS.candles = candles;
+  CS.series.candle.setData(candles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
+  CS.mainC.timeScale().fitContent();
+  applyIndicators();
+  if (candles.length) updateLivePrice(candles[candles.length - 1]);
+}
+
+function updateLivePrice(c) {
+  const coin = cryptoData.find(x => BINANCE_SYM[x.id] === (CS.assetId || '').toUpperCase()) || null;
+  const ref = coin ? coin.current_price : c.close;
+  const chgPct = ref ? ((c.close - ref) / ref * 100) : 0;
+  document.getElementById('sb-price').textContent = fmtPrice(c.close);
+  document.getElementById('sb-price').style.color = c.close >= c.open ? 'var(--green)' : 'var(--red)';
+  const diff = c.close - c.open, diffPct = diff / c.open * 100;
+  document.getElementById('sb-chg').innerHTML = `<span class="${diff >= 0 ? 'up' : 'dn'}">${diff >= 0 ? '+' : ''}${fmtPrice(Math.abs(diff))} (${fmtPct(diffPct)})</span>`;
+}
+
+function updateLastCandle(c) {
+  CS.series.candle.update({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close });
+  if (c.isClosed) {
+    if (!CS.candles.length || CS.candles[CS.candles.length - 1].time < c.time) CS.candles.push(c);
+    else CS.candles[CS.candles.length - 1] = c;
+    applyIndicators();
+  } else {
+    if (CS.candles.length) {
+      // New bar opening: append rather than overwrite the previous closed bar
+      if (CS.candles[CS.candles.length - 1].time < c.time) CS.candles.push(c);
+      else CS.candles[CS.candles.length - 1] = c;
+    }
+  }
+  updateLivePrice(c);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA LAYER — BINANCE REST + WEBSOCKET
+// ═══════════════════════════════════════════════════════════════════
+
+async function fetchBinanceKlines(sym, interval, limit = 200) {
+  const url = `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`;
+  const rows = await (await fetch(url)).json();
+  if (!Array.isArray(rows)) throw new Error(rows?.msg || 'Invalid symbol or Binance unavailable');
+  return rows.map(r => ({
+    time: r[0] / 1000, open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5]
+  }));
+}
+
+function connectBinanceWS(sym, interval) {
+  disconnectWS();
+  const stream = `${sym.toLowerCase()}@kline_${interval}`;
+  const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${stream}`);
+  ws.onopen = () => {
+    CS.wsAlive = true;
+    document.getElementById('live-dot').className = 'live-dot streaming';
+    document.getElementById('live-status').textContent = `Streaming ${sym} ${interval}`;
+  };
+  ws.onmessage = e => {
+    const k = JSON.parse(e.data).k;
+    updateLastCandle({ time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v, isClosed: k.x });
+  };
+  ws.onerror = ws.onclose = () => {
+    CS.wsAlive = false;
+    document.getElementById('live-dot').className = 'live-dot';
+    document.getElementById('live-status').textContent = 'Disconnected — reconnecting...';
+    // Clear any previous reconnect timer before setting a new one
+    if (CS.stockTimer) { clearTimeout(CS.stockTimer); clearInterval(CS.stockTimer); CS.stockTimer = null; }
+    CS.stockTimer = setTimeout(() => { if (CS.assetId && !CS.isStock) loadCryptoChart(CS.assetId); }, 10000);
+  };
+  CS.ws = ws;
+}
+
+function disconnectWS() {
+  if (CS.ws) { try { CS.ws.close(); } catch(e){} CS.ws = null; }
+  if (CS.stockTimer) { clearTimeout(CS.stockTimer); clearInterval(CS.stockTimer); CS.stockTimer = null; }
+  CS.wsAlive = false;
+}
+
+async function fetchOnChain(sym) {
+  const base = 'https://fapi.binance.com';
+  try {
+    const [prem, oi, lsr] = await Promise.all([
+      fetch(`${base}/fapi/v1/premiumIndex?symbol=${sym}`).then(r => r.json()),
+      fetch(`${base}/fapi/v1/openInterest?symbol=${sym}`).then(r => r.json()),
+      fetch(`${base}/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`).then(r => r.json()),
+    ]);
+    const fr = parseFloat(prem.lastFundingRate) * 100;
+    const oiVal = parseFloat(oi.openInterest);
+    const ls = Array.isArray(lsr) && lsr.length ? lsr[0] : null;
+    const lsRatio = ls ? parseFloat(ls.longShortRatio) : null;
+
+    const frColor = fr > 0.05 ? 'var(--red)' : fr < -0.01 ? 'var(--green)' : 'var(--yellow)';
+    const lsColor = lsRatio ? (lsRatio > 1.2 ? 'var(--green)' : lsRatio < 0.8 ? 'var(--red)' : 'var(--yellow)') : 'var(--dim)';
+
+    document.getElementById('onchain-rows').innerHTML = `
+      <div class="oc-row"><span class="oc-label">Funding Rate (8h)</span><span class="oc-val" style="color:${frColor}">${fr > 0 ? '+' : ''}${fr.toFixed(4)}%${fr > 0.05 ? ' ⚠️ Longs paying' : fr < -0.01 ? ' 🟢 Shorts paying' : ''}</span></div>
+      <div class="oc-row"><span class="oc-label">Open Interest</span><span class="oc-val">${fmtB(oiVal * parseFloat(prem.markPrice))}</span></div>
+      ${lsRatio ? `<div class="oc-row"><span class="oc-label">Long/Short Ratio</span><span class="oc-val" style="color:${lsColor}">${lsRatio.toFixed(2)} (${lsRatio > 1 ? 'Longs dominating' : 'Shorts dominating'})</span></div>` : ''}
+      <div class="oc-row"><span class="oc-label">Mark Price</span><span class="oc-val">${fmtPrice(parseFloat(prem.markPrice))}</span></div>
+    `;
+  } catch(e) {
+    document.getElementById('onchain-rows').innerHTML = `<div style="font-size:11px;color:var(--muted)">Futures data unavailable (${e.message})</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA LAYER — STOCK CHARTS (Yahoo Finance primary, AV fallback)
+// ═══════════════════════════════════════════════════════════════════
+
+async function fetchStockChart(sym, uiInterval) {
+  const yhMap = {
+    '1m':  { interval: '1m',  range: '1d'  },
+    '5m':  { interval: '5m',  range: '5d'  },
+    '15m': { interval: '15m', range: '5d'  },
+    '1h':  { interval: '60m', range: '1mo' },
+    '4h':  { interval: '60m', range: '3mo' },
+    '1d':  { interval: '1d',  range: '6mo' },
+  };
+  const yp = yhMap[uiInterval] || { interval: '15m', range: '5d' };
+
+  const hosts   = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+  const proxies = [
+    'https://corsproxy.io/?url=',
+    'https://api.allorigins.win/raw?url=',
+    'https://api.codetabs.com/v1/proxy/?quest=',
+  ];
+
+  for (const host of hosts) {
+    for (const proxy of proxies) {
+      try {
+        const yhUrl = `${host}/v8/finance/chart/${sym}?interval=${yp.interval}&range=${yp.range}&events=history`;
+        const r = await fetch(proxy + encodeURIComponent(yhUrl), { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) continue;
+        const d = await r.json();
+        const res = d?.chart?.result?.[0];
+        if (res?.timestamp?.length > 5) {
+          const q = res.indicators.quote[0];
+          const candles = res.timestamp.map((t, i) => ({
+            time: t,
+            open:   +q.open[i]   || 0,
+            high:   +q.high[i]   || 0,
+            low:    +q.low[i]    || 0,
+            close:  +q.close[i]  || 0,
+            volume: +q.volume[i] || 0
+          })).filter(c => c.close > 0);
+          if (candles.length > 5) return candles;
+        }
+      } catch(_) {}
+    }
+  }
+
+  // Fallback: Alpha Vantage daily
+  if (!avKey) return [];
+  try {
+    const avUrl = `${_AV_BASE}?function=TIME_SERIES_DAILY&symbol=${sym}&outputsize=compact${_AV_KEY}`;
+    const d = await (await fetch(avUrl)).json();
+    const key = 'Time Series (Daily)';
+    if (!d[key]) return [];
+    return Object.entries(d[key]).reverse().map(([ts, v]) => ({
+      time: ts,
+      open: +v['1. open'], high: +v['2. high'], low: +v['3. low'],
+      close: +v['4. close'], volume: +v['5. volume']
+    }));
+  } catch(e) { return []; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOAD ASSET INTO CHART
+// ═══════════════════════════════════════════════════════════════════
+
+async function loadCryptoChart(coinId) {
+  disconnectWS();
+  CS.assetId = coinId; CS.isStock = false;
+  const sym = BINANCE_SYM[coinId];
+  if (!sym) return;
+  // Store ATH data for profit potential calc
+  const coinRef = cryptoData.find(c => c.id === coinId);
+  CS.extra = {
+    ath: coinRef?.ath ?? null,
+    athPct: coinRef?.ath_change_percentage ?? null,
+    analystTarget: null,
+    symbol: coinRef?.symbol?.toUpperCase() ?? coinId
+  };
+
+  document.getElementById('live-status').textContent = `Loading ${sym}...`;
+  document.getElementById('live-dot').className = 'live-dot';
+  buildCharts();
+
+  try {
+    const candles = await fetchBinanceKlines(sym, CS.interval, 300);
+    setCandleData(candles);
+    connectBinanceWS(sym, CS.interval);
+    fetchOnChain(sym);
+  } catch(e) {
+    document.getElementById('live-status').textContent = 'Binance error: ' + e.message;
+  }
+}
+
+async function loadStockChart(sym) {
+  disconnectWS();
+  CS.assetId = sym; CS.isStock = true;
+  // Store analyst target for profit potential calc
+  const ov = overviewCache[sym];
+  CS.extra = {
+    ath: null, athPct: null,
+    analystTarget: (ov?.AnalystTargetPrice && ov.AnalystTargetPrice !== 'None') ? parseFloat(ov.AnalystTargetPrice) : null,
+    symbol: sym
+  };
+  document.getElementById('live-status').textContent = `Loading ${sym}...`;
+  document.getElementById('live-dot').className = 'live-dot';
+  buildCharts();
+
+  const candles = await fetchStockChart(sym, CS.interval);
+  if (candles.length) {
+    setCandleData(candles);
+    document.getElementById('live-dot').className = 'live-dot streaming';
+    document.getElementById('live-status').textContent = `${sym} — refreshing every 60s`;
+    CS.stockTimer = setInterval(async () => {
+      const fresh = await fetchStockChart(sym, CS.interval);
+      if (fresh.length) setCandleData(fresh);
+    }, 60000);
+  } else {
+    document.getElementById('live-status').textContent = `${sym} — could not load chart data`;
+  }
+  document.getElementById('onchain-rows').innerHTML = `<div style="font-size:11px;color:var(--muted)">On-chain data is for crypto assets only.</div>`;
+}
+
+function setInterval_(iv, evt) {
+  CS.interval = iv;
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+  if (evt?.target) evt.target.classList.add('active');
+  if (CS.assetId) {
+    CS.isStock ? loadStockChart(CS.assetId) : loadCryptoChart(CS.assetId);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BUILD ASSET TABS
+// ═══════════════════════════════════════════════════════════════════
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  (btn || document.querySelector(`.page-tab[data-page="${id}"]`))?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // LightweightCharts requires a visible container — rebuild if switching to charts page
+  if (id === 'charts') {
+    setTimeout(() => {
+      if (CS.assetId) {
+        CS.isStock ? loadStockChart(CS.assetId) : loadCryptoChart(CS.assetId);
+      } else {
+        buildCharts(); // at least init empty chart containers
+      }
+    }, 60);
+  }
+}
+
+function buildAssetTabs() {
+  const cryptoTabsEl = document.getElementById('crypto-tabs');
+  const stockTabsEl  = document.getElementById('stock-tabs');
+
+  CRYPTO_IDS.forEach(id => {
+    const meta = CRYPTO_META[id] || {};
+    const sym  = id === 'avalanche-2' ? 'AVAX' : id === 'binancecoin' ? 'BNB' : id.slice(0, 4).toUpperCase();
+    const btn  = document.createElement('button');
+    btn.className = 'asset-tab crypto-tab';
+    btn.textContent = sym;
+    btn.title = meta.icon ? meta.icon + ' ' + sym : sym;
+    btn.onclick = () => {
+      document.querySelectorAll('.asset-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadCryptoChart(id);
+    };
+    cryptoTabsEl.appendChild(btn);
+  });
+
+  Object.keys(STOCK_DATA).forEach(sym => {
+    const btn = document.createElement('button');
+    btn.className = 'asset-tab stock-tab';
+    btn.textContent = sym;
+    btn.onclick = () => {
+      document.querySelectorAll('.asset-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadStockChart(sym);
+    };
+    stockTabsEl.appendChild(btn);
+  });
+}
+
+buildAssetTabs();
+
+// ═══════════════════════════════════════════════════════════════════
+// AUTH — Netlify Identity gate
+// ═══════════════════════════════════════════════════════════════════
+(function setupAuth() {
+  const gate     = document.getElementById('auth-gate');
+  const userEl   = document.getElementById('hdr-user');
+  const emailEl  = document.getElementById('hdr-user-email');
+
+  function showGate()  { gate.style.display = 'flex'; }
+  function hideGate(user) {
+    gate.style.display = 'none';
+    if (user?.email) {
+      emailEl.textContent = user.email;
+      userEl.style.display = 'flex';
+    }
+  }
+
+  if (_IS_LOCAL) {
+    // Running locally — skip auth entirely
+    hideGate({ email: 'local dev' });
+    init();
+    return;
+  }
+
+  if (!window.netlifyIdentity) {
+    // Widget not loaded (shouldn't happen on Netlify, but skip auth if so)
+    hideGate({});
+    init();
+    return;
+  }
+
+  showGate(); // hidden until identity confirms a session
+
+  netlifyIdentity.on('init', user => {
+    if (user) { hideGate(user); init(); }
+    else showGate();
+  });
+
+  netlifyIdentity.on('login', user => {
+    hideGate(user);
+    netlifyIdentity.close();
+    init();
+  });
+
+  netlifyIdentity.on('logout', () => {
+    userEl.style.display = 'none';
+    showGate();
+  });
+
+  netlifyIdentity.init();
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// GLOBAL MACRO NEWS FEED
+// ═══════════════════════════════════════════════════════════════════
+
+
+// Google News topic-search RSS — each query pulls 20 articles from Reuters/Bloomberg/FT/AP etc.
+const RSS_SOURCES = [
+  // ── CRYPTO MARKET — direct site feeds (most reliable) ─────────────
+  { url:'https://cointelegraph.com/rss',                                          name:'CoinTelegraph',    skipFilter:true,  section:'crypto' },
+  { url:'https://bitcoinist.com/feed/',                                           name:'Bitcoinist',       skipFilter:true,  section:'crypto' },
+  { url:'https://www.newsbtc.com/feed/',                                          name:'NewsBTC',          skipFilter:true,  section:'crypto' },
+  { url:'https://cryptoslate.com/feed/',                                          name:'CryptoSlate',      skipFilter:true,  section:'crypto' },
+  { url:'https://beincrypto.com/feed/',                                           name:'BeInCrypto',       skipFilter:true,  section:'crypto' },
+  { url:'https://www.coindesk.com/arc/outboundfeeds/rss/',                        name:'CoinDesk',         skipFilter:true,  section:'crypto' },
+  { url:'https://decrypt.co/feed',                                                name:'Decrypt',          skipFilter:true,  section:'crypto' },
+  { url:'https://bitcoinmagazine.com/.rss/full/',                                 name:'Bitcoin Magazine', skipFilter:true,  section:'crypto' },
+  { url:'https://ambcrypto.com/feed/',                                            name:'AMBCrypto',        skipFilter:true,  section:'crypto' },
+  { url:'https://cryptopotato.com/feed/',                                         name:'CryptoPotato',     skipFilter:true,  section:'crypto' },
+  // ── POLICY & REGULATION ───────────────────────────────────────────
+  { url:'https://www.federalreserve.gov/feeds/press_all.xml',                     name:'Federal Reserve',  skipFilter:true,  section:'policy' },
+  { url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258', name:'CNBC Economy', skipFilter:false, section:'policy' },
+  { url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', name:'CNBC Finance', skipFilter:false, section:'policy' },
+  // ── MACRO & MARKETS ───────────────────────────────────────────────
+  { url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', name:'CNBC',       skipFilter:false, section:'macro' },
+  { url:'https://feeds.marketwatch.com/marketwatch/topstories/',                  name:'MarketWatch',      skipFilter:false, section:'macro' },
+  { url:'https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines',     name:'MarketWatch Live', skipFilter:false, section:'macro' },
+  { url:'https://finance.yahoo.com/news/rssindex',                                name:'Yahoo Finance',    skipFilter:false, section:'macro' },
+  { url:'https://feeds.npr.org/1006/rss.xml',                                     name:'NPR Business',     skipFilter:false, section:'macro' },
+];
+
+const SEVEN_DAYS_MS  = 7  * 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const MACRO_KEYWORDS = [
+  'rate','inflation','interest','fed','fomc','central bank','ecb','boe','hawkish','dovish','monetary',
+  'tariff','trade','sanction','export','import','wto','protectionism','china','supply chain',
+  'regulation','legislation','bill','congress','senate','executive order','sec','cftc','policy',
+  'bitcoin','crypto','blockchain','stablecoin','cbdc','digital asset','defi','cryptocurrency',
+  'deficit','debt','spending','budget','gdp','recession','imf','world bank','fiscal','tax','stimulus',
+  'ukraine','russia','middle east','war','conflict','nato','oil','energy','opec','geopolit',
+  'bond','yield','dollar','currency','equity','nasdaq','market','commodity','gold','treasury',
+  'trump','powell','lagarde','yellen','white house','g7','g20','davos','oecd'
+];
+
+function isForwardLooking(title, desc) {
+  const t = (title + ' ' + (desc||'')).toLowerCase();
+  return /\bwill\b|plans? to|propos|schedul|upcoming|next week|next month|expected to|set to|vote on|to be introduc|announc.*for|coming|forecast|projection|outlook|guidance|on the table|under consider|draft|bill would|could pass|may implement|likely to|due to/.test(t);
+}
+
+function tagArticle(title, desc) {
+  const text = (title + ' ' + (desc||'')).toLowerCase();
+  const tags = [];
+  if (/fed|fomc|rate|inflation|interest|hawkish|dovish|monetary|central bank|boe|ecb|rba|boj|rate cut|rate hike|basis point/.test(text)) tags.push('rates');
+  if (/tariff|trade war|trade deal|sanction|export|import|wto|protectionism|customs|china.*trade|trade.*china|dumping/.test(text)) tags.push('trade');
+  if (/regulation|legislation|bill|congress|senate|executive order|\bsec\b|cftc|policy|white house|government.*order|court ruling|law passed|signed into law|act of/.test(text)) tags.push('policy');
+  if (/bitcoin|crypto|blockchain|stablecoin|cbdc|digital asset|defi|ethereum|token|binance|coinbase|crypto.*regulat|regulat.*crypto/.test(text)) tags.push('crypto');
+  if (/deficit|national debt|spending|budget|gdp|recession|imf|world bank|fiscal|tax cut|tax hike|stimulus|austerity|debt ceiling/.test(text)) tags.push('fiscal');
+  if (/ukraine|russia|israel|middle east|nato|war|conflict|military|coup|missile|invasion|tension|sanction.*russia|iran|taiwan/.test(text)) tags.push('geo');
+  if (tags.length === 0) tags.push('markets');
+  if (isForwardLooking(title, desc)) tags.push('upcoming');
+  return tags;
+}
+
+function sectionFromTags(tags) {
+  if (tags.includes('crypto')) return 'crypto';
+  if (tags.includes('policy') || tags.includes('rates')) return 'policy';
+  if (tags.includes('trade') || tags.includes('fiscal') || tags.includes('geo') || tags.includes('markets')) return 'macro';
+  return 'macro';
+}
+
+function isMacroRelevant(title, desc) {
+  const text = (title + ' ' + (desc||'')).toLowerCase();
+  return MACRO_KEYWORDS.some(k => text.includes(k));
+}
+
+function timeAgo(dateStr) {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  if (ms < 0) return timeUntil(dateStr);
+  const m = Math.floor(ms / 60000);
+  if (m < 2)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function timeUntil(dateStr) {
+  const ms = new Date(dateStr).getTime() - Date.now();
+  if (ms <= 0) return 'now';
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return 'in ' + m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return 'in ' + h + 'h';
+  return 'in ' + Math.floor(h / 24) + 'd';
+}
+
+function newsSentimentLabel(score) {
+  if (score == null) return null;
+  if (score >  0.25) return { text:'Risk-on signal',    color:'var(--green)',  dot:'#10b981' };
+  if (score >  0.05) return { text:'Mildly positive',   color:'#34d399',       dot:'#34d399' };
+  if (score > -0.05) return { text:'Market neutral',    color:'var(--muted)',  dot:'#64748b' };
+  if (score > -0.25) return { text:'Mildly negative',   color:'var(--orange)', dot:'#f97316' };
+  return                     { text:'Risk-off signal',  color:'var(--red)',    dot:'#ef4444' };
+}
+
+function keywordSentiment(title, desc) {
+  const text = (title + ' ' + (desc||'')).toLowerCase();
+  let s = 0;
+  const bull = ['cut rate','rate cut','stimulus','deal signed','ceasefire','approved','record high','beat expectations','gdp growth','trade deal','quantitative easing','market rally','recovery'];
+  const bear = ['rate hike','hike rate','recession','crash','collapse','ban','crisis','escalat','default','downgrade','tariff hike','inflation surge','market crash','bank failure','debt crisis'];
+  bull.forEach(w => { if (text.includes(w)) s += 0.15; });
+  bear.forEach(w => { if (text.includes(w)) s -= 0.15; });
+  return Math.max(-1, Math.min(1, s));
+}
+
+function newsTagHtml(tags) {
+  const map = { rates:'ntag-rates', trade:'ntag-trade', policy:'ntag-policy', crypto:'ntag-crypto', fiscal:'ntag-fiscal', geo:'ntag-geo', markets:'ntag-markets', upcoming:'ntag-policy' };
+  return tags.filter(t => t !== 'upcoming').map(t => `<span class="news-tag ${map[t]||'ntag-markets'}">${t}</span>`).join('');
+}
+
+function renderCalendarStrip(events) {
+  const wrap = document.getElementById('cal-strip-wrap');
+  const strip = document.getElementById('cal-strip');
+  if (!events.length) { wrap.style.display = 'none'; return; }
+  const countryFlag = { USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', JPY:'🇯🇵', CNY:'🇨🇳', CAD:'🇨🇦', AUD:'🇦🇺', NZD:'🇳🇿', CHF:'🇨🇭' };
+  strip.innerHTML = events.map(ev => {
+    const flag  = countryFlag[ev.country] || '🌐';
+    const when  = ev.date ? timeUntil(ev.date) : '';
+    const cls   = ev.impact === 'High' ? 'impact-high' : ev.impact === 'Medium' ? 'impact-med' : 'impact-low';
+    const fcast = ev.forecast ? `<span>Forecast: <span class="cal-forecast-val">${ev.forecast}</span></span>` : '';
+    const prev  = ev.previous ? `<span>Prev: ${ev.previous}</span>` : '';
+    return `<div class="cal-card ${cls}">
+      <div class="cal-when">${flag} ${ev.country} · <strong style="color:var(--text)">${when}</strong></div>
+      <div class="cal-title">${ev.title}</div>
+      <div class="cal-meta">${fcast}${prev}</div>
+    </div>`;
+  }).join('');
+  wrap.style.display = 'block';
+}
+
+function renderNewsFeed(items) {
+  // Distribute articles into the 3 columns
+  const bySection = { crypto: [], policy: [], macro: [] };
+  items.forEach(a => {
+    const sec = a.section || sectionFromTags(a.tags);
+    (bySection[sec] || bySection.macro).push(a);
+  });
+
+  const buildCard = (item) => {
+    const sent    = item.sentiment != null ? newsSentimentLabel(item.sentiment) : newsSentimentLabel(keywordSentiment(item.title, item.desc));
+    const excerpt = (item.desc || '').replace(/<[^>]+>/g,'').replace(/&[a-z]+;/gi,'').trim().slice(0, 160);
+    const isFwd   = item.tags.includes('upcoming');
+    return `<div class="ncard">
+      <div class="ncard-meta">
+        <span class="ncard-source">${item.source}</span>
+        <span class="ncard-time">${timeAgo(item.date)}</span>
+      </div>
+      <div class="ncard-headline">${item.title}</div>
+      ${excerpt ? `<div class="ncard-excerpt">${excerpt}</div>` : ''}
+      <div class="ncard-footer">
+        ${sent ? `<span class="ncard-sent"><span class="ncard-dot" style="background:${sent.dot}"></span><span style="color:${sent.color};font-size:10px">${sent.text}</span></span>` : '<span></span>'}
+        <div style="display:flex;align-items:center;gap:6px">
+          ${isFwd ? '<span class="ncard-upcoming">🗓 UPCOMING</span>' : ''}
+          ${item.url ? `<a class="ncard-read" href="${item.url}" target="_blank" rel="noopener">Read →</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  ['crypto','policy','macro'].forEach(sec => {
+    const col   = document.getElementById('nc-' + sec);
+    const count = document.getElementById('nc-' + sec + '-count');
+    const arts  = bySection[sec];
+    if (count) count.textContent = arts.length + ' articles';
+    if (!col) return;
+    if (!arts.length) {
+      col.innerHTML = `<div class="news-empty">No articles yet.<br>Try refreshing.</div>`;
+      return;
+    }
+    col.innerHTML = arts.map(buildCard).join('');
+  });
+}
+
+
+async function fetchEconomicCalendar() {
+  try {
+    // Forex Factory high-impact calendar — current + next week
+    const url   = 'https://nfs.faireconomy.media/ff_calendar_thisweek.xml';
+    const proxy = 'https://corsproxy.io/?url=' + encodeURIComponent(url);
+    const text  = await (await fetch(proxy, { signal: AbortSignal.timeout(4000) })).text();
+    const xml   = new DOMParser().parseFromString(text, 'text/xml');
+    const events = Array.from(xml.querySelectorAll('event')).map(e => ({
+      title:    e.querySelector('title')?.textContent?.trim() || '',
+      country:  e.querySelector('country')?.textContent?.trim() || '',
+      date:     e.querySelector('date')?.textContent?.trim() || '',
+      impact:   e.querySelector('impact')?.textContent?.trim() || '',
+      forecast: e.querySelector('forecast')?.textContent?.trim() || '',
+      previous: e.querySelector('previous')?.textContent?.trim() || '',
+    }));
+    // Only High/Medium impact, upcoming only
+    return events.filter(e => (e.impact === 'High' || e.impact === 'Medium') && new Date(e.date).getTime() > Date.now() - 3600000);
+  } catch(e) { return []; }
+}
+
+function parseRSSXml(text, fallbackName) {
+  const xml   = new DOMParser().parseFromString(text, 'text/xml');
+  const nodes = Array.from(xml.querySelectorAll('item, entry'));
+  return nodes.map(item => {
+    const title   = item.querySelector('title')?.textContent?.trim() || '';
+    const desc    = (item.querySelector('description')?.textContent || item.querySelector('summary')?.textContent || '').replace(/<[^>]+>/g,'').trim();
+    const link    = item.querySelector('link')?.textContent?.trim() || item.querySelector('link')?.getAttribute('href') || '';
+    const pubDate = item.querySelector('pubDate')?.textContent?.trim() || item.querySelector('updated')?.textContent?.trim() || '';
+    const source  = item.querySelector('source')?.textContent?.trim() || fallbackName;
+    return { title, desc, link, date: pubDate ? new Date(pubDate) : new Date(), source };
+  });
+}
+
+async function fetchRSSFeed(src) {
+  const { url, name: fallbackName, skipFilter, section = 'macro' } = src;
+  const cutoff = Date.now() - SEVEN_DAYS_MS;
+  let rawItems = null;
+
+  // ── Method 1: direct CORS proxies (fast, no rate limits) ─────────
+  for (const proxy of [
+    'https://corsproxy.io/?url=',
+    'https://api.allorigins.win/raw?url=',
+    'https://thingproxy.freeboard.io/fetch/',
+  ]) {
+    try {
+      const r = await fetch(proxy + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) continue;
+      const t = await r.text();
+      if (!t || (!t.includes('<item') && !t.includes('<entry'))) continue;
+      const items = parseRSSXml(t, fallbackName);
+      if (items.length) { rawItems = items; break; }
+    } catch(_) {}
+  }
+
+  // ── Method 2: rss2json API (server-side, bypasses CORS entirely) ──
+  if (!rawItems) {
+    try {
+      const r = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(8000) });
+      const d = await r.json();
+      if (d.status === 'ok' && Array.isArray(d.items) && d.items.length) {
+        rawItems = d.items.map(item => ({
+          title:  (item.title || '').trim(),
+          desc:   (item.description || item.content || '').replace(/<[^>]+>/g,'').replace(/&[a-z#0-9]+;/gi,'').trim(),
+          link:   item.link || '',
+          date:   item.pubDate ? new Date(item.pubDate) : new Date(),
+          source: fallbackName,
+        }));
+      }
+    } catch(_) {}
+  }
+
+  if (!rawItems || !rawItems.length) return [];
+
+  return rawItems.map(item => ({
+    title:     item.title || '',
+    desc:      item.desc || '',
+    url:       item.link || '',
+    date:      (item.date instanceof Date ? item.date : new Date(item.date)).toISOString(),
+    source:    item.source || fallbackName,
+    sentiment: null,
+    tags:      tagArticle(item.title || '', item.desc || ''),
+    section,
+  })).filter(a => {
+    if (!a.title) return false;
+    if (!skipFilter && !isMacroRelevant(a.title, a.desc)) return false;
+    const d = new Date(a.date).getTime();
+    return isNaN(d) || d > cutoff;
+  });
+}
+
+async function fetchAVMacroNews() {
+  if (!avKey) return [];
+  try {
+    const tf  = new Date(Date.now() - SEVEN_DAYS_MS);
+    const pad = n => String(n).padStart(2,'0');
+    const tfStr = `${tf.getFullYear()}${pad(tf.getMonth()+1)}${pad(tf.getDate())}T${pad(tf.getHours())}${pad(tf.getMinutes())}`;
+    const url = `${_AV_BASE}?function=NEWS_SENTIMENT&topics=blockchain,economy_macro,economy_fiscal,economy_monetary,financial_markets,technology&sort=LATEST&limit=50&time_from=${tfStr}${_AV_KEY}`;
+    const d   = await (await fetch(url, { signal: AbortSignal.timeout(8000) })).json();
+    if (!d.feed) return [];
+    return d.feed.map(a => {
+      const raw  = a.time_published || '';
+      const iso  = raw.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,'$1-$2-$3T$4:$5:$6Z');
+      const tags = tagArticle(a.title, a.summary || '');
+      return {
+        title:     a.title,
+        desc:      a.summary || '',
+        url:       a.url,
+        date:      iso || new Date().toISOString(),
+        source:    a.source || 'AlphaVantage',
+        sentiment: parseFloat(a.overall_sentiment_score) || null,
+        tags,
+        section:   sectionFromTags(tags)
+      };
+    }).filter(a => {
+      if (!isMacroRelevant(a.title, a.desc)) return false;
+      const age = Date.now() - new Date(a.date).getTime();
+      return age < SEVEN_DAYS_MS;
+    });
+  } catch(e) { return []; }
+}
+
+async function fetchMacroNews(manual = false) {
+  if (manual) {
+    ['nc-crypto','nc-policy','nc-macro'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="news-loading">${'<div class="skeleton news-skel"></div>'.repeat(4)}</div>`;
+    });
+  }
+
+  // All sources fire in parallel — calendar + AV + all RSS
+  const [calEvents, avNews, ...rssResults] = await Promise.all([
+    fetchEconomicCalendar(),
+    fetchAVMacroNews(),
+    ...RSS_SOURCES.map(s => fetchRSSFeed(s))
+  ]);
+
+  // Render economic calendar strip
+  renderCalendarStrip(calEvents);
+
+  // Merge news, deduplicate by first 60 chars of title
+  const seen  = new Set();
+  const all   = [];
+  [...avNews, ...rssResults.flat()].forEach(a => {
+    const key = a.title.slice(0,60).toLowerCase().replace(/\s+/g,'');
+    if (!seen.has(key)) { seen.add(key); all.push(a); }
+  });
+
+  // Sort: upcoming first, then by date desc
+  all.sort((a, b) => {
+    const aFwd = a.tags.includes('upcoming') ? 1 : 0;
+    const bFwd = b.tags.includes('upcoming') ? 1 : 0;
+    if (aFwd !== bFwd) return bFwd - aFwd;
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  renderNewsFeed(all.slice(0, 300));
+  if (manual) showToast(`Feed updated — ${all.length} articles across 3 columns`);
+}
+</script>
+</body>
+</html>
