@@ -1,15 +1,36 @@
 // Fetches real user count from Netlify Identity admin API
 // Requires NETLIFY_API_TOKEN env var (Netlify user settings → Personal access tokens)
 exports.handler = async () => {
-  const token  = process.env.NETLIFY_API_TOKEN;
-  const siteId = process.env.SITE_ID; // auto-injected by Netlify
-
-  if (!token || !siteId) {
-    return { statusCode: 200, body: JSON.stringify({ count: 0 }) };
+  const token = process.env.NETLIFY_API_TOKEN;
+  if (!token) {
+    return { statusCode: 200, body: JSON.stringify({ count: 0, reason: 'no_token' }) };
   }
 
   try {
-    // Page through all users to get a real total count
+    // SITE_ID is not reliably auto-injected — discover it from the API instead
+    let siteId = process.env.SITE_ID || process.env.NETLIFY_SITE_ID;
+
+    if (!siteId) {
+      // List sites for this token and match by URL (or take the first/only one)
+      const siteUrl = (process.env.URL || process.env.DEPLOY_PRIME_URL || '').replace(/\/$/, '');
+      const sr = await fetch('https://api.netlify.com/api/v1/sites?per_page=100', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const sites = await sr.json();
+      if (Array.isArray(sites) && sites.length > 0) {
+        const match = siteUrl
+          ? sites.find(s => s.url === siteUrl || s.ssl_url === siteUrl ||
+              (s.default_domain && siteUrl.includes(s.default_domain)))
+          : null;
+        siteId = (match || sites[0]).id;
+      }
+    }
+
+    if (!siteId) {
+      return { statusCode: 200, body: JSON.stringify({ count: 0, reason: 'no_site_id' }) };
+    }
+
+    // Page through all Identity users to get a real total
     let page = 1, total = 0;
     while (true) {
       const r = await fetch(
@@ -22,6 +43,7 @@ exports.handler = async () => {
       if (users.length < 100) break;
       page++;
     }
+
     return {
       statusCode: 200,
       headers: {
