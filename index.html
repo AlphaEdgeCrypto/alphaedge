@@ -358,6 +358,42 @@
     .lp-stat { text-align:center; }
     .lp-stat-val { font-size:28px; font-weight:900; background:linear-gradient(135deg,#10b981,#06b6d4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
     .lp-stat-lbl { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.6px; margin-top:4px; font-weight:600; }
+
+    /* ── AI ANALYSIS HUD ── */
+    .ai-hud { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 12px; }
+    .ai-hud-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .ai-hud-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+    .ai-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); display: inline-block; animation: livePulse 1.5s ease-in-out infinite; }
+    .ai-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    @media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr 1fr; } }
+    .ai-cell { background: var(--bg2); border-radius: 8px; padding: 10px 12px; }
+    .ai-cell-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-weight: 600; }
+    .ai-cell-val { font-size: 15px; font-weight: 800; }
+    .ai-bias-bull { color: var(--green); }
+    .ai-bias-bear { color: var(--red); }
+    .ai-bias-neut { color: var(--yellow); }
+    .ai-confidence { display: flex; align-items: center; gap: 8px; }
+    .ai-conf-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .ai-conf-fill { height: 100%; border-radius: 3px; background: var(--purple); }
+    .ai-levels { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .ai-level { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
+    .ai-level-entry { background: #1a0c2e; color: #c084fc; border: 1px solid #3b1f5e; }
+    .ai-level-target { background: #052e16; color: #34d399; border: 1px solid #064e3b; }
+    .ai-level-stop { background: #2a0a0a; color: #f87171; border: 1px solid #450a0a; }
+    .ai-level-sup { background: var(--card2); color: var(--cyan); border: 1px solid var(--border2); }
+    .ai-level-res { background: var(--card2); color: var(--orange); border: 1px solid var(--border2); }
+    .ai-reasoning { font-size: 12px; color: var(--dim); line-height: 1.6; background: var(--bg2); padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--purple); margin-bottom: 10px; }
+    .ai-footer { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); flex-wrap: wrap; gap: 6px; }
+    .ai-urgency { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 6px; }
+    .ai-urg-now  { background: #052e16; color: #34d399; }
+    .ai-urg-wait { background: #1a1200; color: #fbbf24; }
+    .ai-urg-avoid { background: #2a0a0a; color: #f87171; }
+    .ai-loading { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--muted); font-size: 12px; }
+    .ai-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .ai-tfa { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .ai-tfa-bull { background: #052e16; color: #34d399; }
+    .ai-tfa-bear { background: #2a0a0a; color: #f87171; }
+    .ai-tfa-mix  { background: #1a1200; color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -668,6 +704,24 @@
             <div id="onchain-rows"><div style="font-size:11px;color:var(--muted)">Load a crypto asset to see funding rate, open interest and long/short ratio.</div></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── AI ANALYSIS HUD ── -->
+    <div class="ai-hud" id="ai-hud" style="display:none">
+      <div class="ai-hud-header">
+        <div class="ai-hud-title">
+          <span class="ai-pulse"></span>
+          AI Market Analysis
+          <span id="ai-symbol-label" style="color:var(--text);text-transform:none;letter-spacing:0;font-size:13px"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="ai-updated" style="font-size:10px;color:var(--muted)"></span>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="runAIAnalysis(true)">Refresh</button>
+        </div>
+      </div>
+      <div id="ai-content">
+        <div class="ai-loading"><div class="ai-spinner"></div>Analysing market data across 5 timeframes...</div>
       </div>
     </div>
 
@@ -2393,6 +2447,7 @@ function disconnectWS() {
   if (CS.ws) { try { CS.ws.close(); } catch(e){} CS.ws = null; }
   if (CS.stockTimer) { clearTimeout(CS.stockTimer); clearInterval(CS.stockTimer); CS.stockTimer = null; }
   CS.wsAlive = false;
+  stopAILoop();
 }
 
 async function fetchOnChain(sym) {
@@ -2506,6 +2561,7 @@ async function fetchStockChart(sym, uiInterval) {
 // ═══════════════════════════════════════════════════════════════════
 
 async function loadCryptoChart(coinId) {
+  stopAILoop();
   disconnectWS();
   CS.assetId = coinId; CS.isStock = false;
   const sym = BINANCE_SYM[coinId];
@@ -2528,12 +2584,14 @@ async function loadCryptoChart(coinId) {
     setCandleData(candles);
     connectBinanceWS(sym, CS.interval);
     fetchOnChain(sym);
+    startAILoop();
   } catch(e) {
     document.getElementById('live-status').textContent = 'Binance error: ' + e.message;
   }
 }
 
 async function loadStockChart(sym) {
+  stopAILoop();
   disconnectWS();
   CS.assetId = sym; CS.isStock = true;
   // Store analyst target for profit potential calc
@@ -2551,6 +2609,7 @@ async function loadStockChart(sym) {
     const candles = await fetchStockChart(sym, CS.interval);
     if (candles.length) {
       setCandleData(candles);
+      startAILoop();
       document.getElementById('live-dot').className = 'live-dot streaming';
       document.getElementById('live-status').textContent = `${sym} — refreshing every 60s`;
       CS.stockTimer = setInterval(async () => {
@@ -3151,6 +3210,265 @@ async function fetchMacroNews(manual = false) {
 
   renderNewsFeed(all.slice(0, 150));
   if (manual) showToast(`Feed updated — ${all.length} articles across 3 columns`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AI TRADING ANALYSIS ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+const AI = {
+  lastResult: null,
+  timer: null,
+  running: false,
+  overlayLines: [],    // lightweight-charts price lines
+};
+
+// Fetch OHLCV for multiple timeframes in parallel (Binance for crypto)
+async function fetchMultiTimeframe(sym, isCrypto) {
+  const intervals = ['1m','5m','15m','1h','4h'];
+  if (!isCrypto) {
+    // For stocks use AV or Yahoo — just use current CS data for now plus daily
+    const results = {};
+    if (CS.candles && CS.candles.length) {
+      results['chart'] = CS.candles.slice(-10);
+    }
+    return results;
+  }
+  const binanceSym = typeof sym === 'string' && sym.endsWith('USDT') ? sym : (BINANCE_SYM[sym] || sym + 'USDT');
+  const fetches = intervals.map(iv =>
+    fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSym}&interval=${iv}&limit=20`)
+      .then(r => r.json())
+      .then(rows => Array.isArray(rows) ? rows.map(r => ({
+        t: r[0]/1000, o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5]
+      })) : [])
+      .catch(() => [])
+  );
+  const results = await Promise.all(fetches);
+  const out = {};
+  intervals.forEach((iv, i) => { out[iv] = results[i]; });
+  return out;
+}
+
+// Fetch Binance order book snapshot
+async function fetchOrderBook(binanceSym) {
+  try {
+    const r = await fetch(`https://api.binance.com/api/v3/depth?symbol=${binanceSym}&limit=20`);
+    const d = await r.json();
+    if (!d.bids) return null;
+    // Find largest bid/ask walls
+    const bids = d.bids.map(b => ({ price: +b[0], qty: +b[1] }));
+    const asks = d.asks.map(a => ({ price: +a[0], qty: +a[1] }));
+    const topBid = bids.sort((a,b) => b.qty - a.qty)[0];
+    const topAsk = asks.sort((a,b) => b.qty - a.qty)[0];
+    const totalBid = bids.reduce((s,b) => s + b.qty * b.price, 0);
+    const totalAsk = asks.reduce((s,a) => s + a.qty * a.price, 0);
+    const imbalance = totalBid + totalAsk > 0 ? ((totalBid - totalAsk) / (totalBid + totalAsk) * 100) : 0;
+    return { topBid, topAsk, imbalance: imbalance.toFixed(1), dir: imbalance > 0 ? 'BID HEAVY' : 'ASK HEAVY' };
+  } catch(e) { return null; }
+}
+
+// Compute CVD from current candles
+function computeCVD(candles) {
+  if (!candles || !candles.length) return 0;
+  const recent = candles.slice(-20);
+  return recent.reduce((cvd, c) => {
+    const vol = c.volume || c.v || 0;
+    return cvd + (c.close >= c.open ? vol : -vol);
+  }, 0);
+}
+
+// Build indicators summary from current chart state
+function buildIndicatorsSummary() {
+  if (!CS.candles || !CS.candles.length) return 'No data';
+  const closes = CS.candles.map(c => c.close);
+  const rsiVals = rsiArr(closes).filter(Boolean);
+  const e20Vals = ema(closes, 20).filter(Boolean);
+  const e50Vals = ema(closes, 50).filter(Boolean);
+  const bbVals  = bbArr(closes).filter(Boolean);
+  const rsiNow  = rsiVals[rsiVals.length - 1];
+  const e20Now  = e20Vals[e20Vals.length - 1];
+  const e50Now  = e50Vals[e50Vals.length - 1];
+  const bbNow   = bbVals[bbVals.length - 1];
+  const last    = closes[closes.length - 1];
+  return [
+    rsiNow  != null ? `RSI(14): ${rsiNow.toFixed(1)}` : '',
+    e20Now  != null ? `EMA20: ${fmtPrice(e20Now)} (price ${last > e20Now ? 'ABOVE' : 'BELOW'})` : '',
+    e50Now  != null ? `EMA50: ${fmtPrice(e50Now)} (price ${last > e50Now ? 'ABOVE' : 'BELOW'})` : '',
+    bbNow   != null ? `BB Upper: ${fmtPrice(bbNow.upper)} | Mid: ${fmtPrice(bbNow.mid)} | Lower: ${fmtPrice(bbNow.lower)}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+// Draw overlay lines on the chart
+function drawAIOverlays(result) {
+  if (!CS.mainC || !result) return;
+  // Remove existing AI price lines
+  AI.overlayLines.forEach(l => { try { CS.series.candle.removePriceLine(l); } catch(e){} });
+  AI.overlayLines = [];
+
+  const addLine = (price, color, title, style) => {
+    if (style === undefined) style = 0;
+    if (!price || isNaN(price)) return;
+    try {
+      const pl = CS.series.candle.createPriceLine({
+        price, color, lineWidth: 1, lineStyle: style,
+        axisLabelVisible: true, title,
+      });
+      AI.overlayLines.push(pl);
+    } catch(e) {}
+  };
+
+  // Entry zone
+  if (result.entry_zone) {
+    addLine(result.entry_zone.high, '#8b5cf6', 'Entry High', 1);
+    addLine(result.entry_zone.low,  '#8b5cf6', 'Entry Low', 1);
+  }
+  // Targets
+  (result.targets || []).forEach((t, i) => addLine(t, '#10b981', `T${i+1}`, 2));
+  // Stop loss
+  if (result.stop_loss) addLine(result.stop_loss, '#ef4444', 'Stop', 0);
+  // Support/resistance
+  (result.key_levels && result.key_levels.support    || []).forEach(l => addLine(l, '#06b6d4', 'Sup', 1));
+  (result.key_levels && result.key_levels.resistance || []).forEach(l => addLine(l, '#f97316', 'Res', 1));
+}
+
+// Render the AI HUD with analysis result
+function renderAIHUD(result) {
+  AI.lastResult = result;
+  const biasClass = result.bias === 'BULLISH' ? 'ai-bias-bull' : result.bias === 'BEARISH' ? 'ai-bias-bear' : 'ai-bias-neut';
+  const tfaCls    = result.timeframe_alignment && result.timeframe_alignment.includes('BULL') ? 'ai-tfa-bull' : result.timeframe_alignment && result.timeframe_alignment.includes('BEAR') ? 'ai-tfa-bear' : 'ai-tfa-mix';
+  const urgCls    = result.urgency === 'NOW' ? 'ai-urg-now' : result.urgency === 'AVOID' ? 'ai-urg-avoid' : 'ai-urg-wait';
+
+  const html = `
+    <div class="ai-grid">
+      <div class="ai-cell">
+        <div class="ai-cell-label">Bias</div>
+        <div class="ai-cell-val ${biasClass}">${result.bias || '—'}</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-cell-label">Confidence</div>
+        <div class="ai-confidence">
+          <div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${result.confidence||0}%"></div></div>
+          <span style="font-size:14px;font-weight:800;color:var(--text)">${result.confidence||0}%</span>
+        </div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-cell-label">Pattern</div>
+        <div class="ai-cell-val" style="font-size:12px;color:var(--dim)">${result.pattern || 'None detected'}</div>
+      </div>
+    </div>
+    <div class="ai-levels">
+      ${result.entry_zone ? `<span class="ai-level ai-level-entry">Entry ${fmtPrice(result.entry_zone.low)}&ndash;${fmtPrice(result.entry_zone.high)}</span>` : ''}
+      ${(result.targets||[]).map((t,i) => `<span class="ai-level ai-level-target">T${i+1} ${fmtPrice(t)}</span>`).join('')}
+      ${result.stop_loss ? `<span class="ai-level ai-level-stop">Stop ${fmtPrice(result.stop_loss)}</span>` : ''}
+      ${(result.key_levels && result.key_levels.support||[]).map(l => `<span class="ai-level ai-level-sup">Sup ${fmtPrice(l)}</span>`).join('')}
+      ${(result.key_levels && result.key_levels.resistance||[]).map(l => `<span class="ai-level ai-level-res">Res ${fmtPrice(l)}</span>`).join('')}
+    </div>
+    <div class="ai-reasoning">${result.reasoning || '—'}</div>
+    <div class="ai-footer">
+      <span>${result.structure || ''}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${result.timeframe_alignment ? `<span class="ai-tfa ${tfaCls}">${result.timeframe_alignment.replace('_',' ')}</span>` : ''}
+        ${result.urgency ? `<span class="ai-urgency ${urgCls}">${result.urgency}</span>` : ''}
+      </div>
+    </div>
+    ${result.invalidation ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">&#9888;&#65039; Invalidated if: ${result.invalidation}</div>` : ''}
+  `;
+  document.getElementById('ai-content').innerHTML = html;
+  drawAIOverlays(result);
+}
+
+async function runAIAnalysis(manual) {
+  if (manual === undefined) manual = false;
+  if (AI.running && !manual) return;
+  if (!CS.assetId) return;
+  AI.running = true;
+
+  const hud = document.getElementById('ai-hud');
+  if (!hud) return;
+  hud.style.display = 'block';
+  if (manual) {
+    document.getElementById('ai-content').innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Analysing market data across 5 timeframes...</div>';
+  }
+  document.getElementById('ai-symbol-label').textContent = (CS.extra && CS.extra.symbol) || CS.assetId;
+
+  try {
+    const isCrypto = !CS.isStock;
+    const binanceSym = isCrypto ? (BINANCE_SYM[CS.assetId] || CS.assetId.toUpperCase() + 'USDT') : null;
+
+    // Gather all data in parallel
+    const [tfData, obData] = await Promise.all([
+      fetchMultiTimeframe(CS.assetId, isCrypto),
+      isCrypto && binanceSym ? fetchOrderBook(binanceSym) : Promise.resolve(null),
+    ]);
+
+    const cvd = computeCVD(CS.candles);
+    const indicators = buildIndicatorsSummary();
+    const currentPrice = CS.candles && CS.candles.length ? CS.candles[CS.candles.length - 1].close : 0;
+
+    // Build timeframes text
+    const timeframesText = Object.entries(tfData).map(([iv, candles]) => {
+      if (!candles || !candles.length) return '';
+      const last3 = candles.slice(-3);
+      return `${iv}: ${last3.map(c => `O:${fmtPrice(c.o||c.open)} H:${fmtPrice(c.h||c.high)} L:${fmtPrice(c.l||c.low)} C:${fmtPrice(c.c||c.close)}`).join(' | ')}`;
+    }).filter(Boolean).join('\n');
+
+    // Funding rate from existing chart state
+    const fundingEl = document.querySelector('#onchain-rows .oc-val');
+    const funding = fundingEl ? fundingEl.textContent.trim() : 'N/A';
+
+    const payload = {
+      symbol:       (CS.extra && CS.extra.symbol) || CS.assetId,
+      currentPrice,
+      timeframesText,
+      indicatorsText: indicators,
+      bidWall:      obData ? `${fmtPrice(obData.topBid && obData.topBid.price)} (${((obData.topBid && obData.topBid.qty)||0).toFixed(2)})` : 'N/A',
+      askWall:      obData ? `${fmtPrice(obData.topAsk && obData.topAsk.price)} (${((obData.topAsk && obData.topAsk.qty)||0).toFixed(2)})` : 'N/A',
+      imbalance:    obData ? obData.imbalance : '0',
+      imbalanceDir: obData ? obData.dir : 'N/A',
+      funding,
+      oi:           'See chart',
+      cvd:          cvd > 0 ? `+${fmtB(Math.abs(cvd))} (Buying pressure)` : `-${fmtB(Math.abs(cvd))} (Selling pressure)`,
+    };
+
+    const r = await fetch('/api/ai-analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    const text = await r.text();
+    let result;
+    try { result = JSON.parse(text); } catch(e) {
+      // Claude sometimes wraps JSON in ```json ... ```
+      const match = text.match(/```(?:json)?\s*([\s\S]+?)```/);
+      if (match) result = JSON.parse(match[1].trim());
+      else throw new Error('Invalid JSON from AI: ' + text.slice(0,100));
+    }
+
+    if (result.error) throw new Error(result.error);
+    renderAIHUD(result);
+    document.getElementById('ai-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('ai-content').innerHTML = `<div style="padding:16px;font-size:12px;color:var(--red)">Analysis failed: ${e.message}</div>`;
+    console.error('AI analysis error:', e);
+  }
+  AI.running = false;
+}
+
+// Start AI loop when an asset is loaded
+function startAILoop() {
+  if (AI.timer) clearInterval(AI.timer);
+  runAIAnalysis(true);
+  AI.timer = setInterval(() => runAIAnalysis(false), 30000);
+}
+
+function stopAILoop() {
+  if (AI.timer) { clearInterval(AI.timer); AI.timer = null; }
+  AI.overlayLines.forEach(l => { try { CS.series.candle.removePriceLine(l); } catch(e){} });
+  AI.overlayLines = [];
+  const hud = document.getElementById('ai-hud');
+  if (hud) hud.style.display = 'none';
 }
 </script>
 </body>

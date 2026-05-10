@@ -24,6 +24,11 @@
   to   = "/.netlify/functions/seed-count"
   status = 200
 
+[[redirects]]
+  from = "/api/ai-analysis"
+  to   = "/.netlify/functions/ai-analysis"
+  status = 200
+
 # Security headers
 [[headers]]
   for = "/*"
