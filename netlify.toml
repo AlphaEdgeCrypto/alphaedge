@@ -19,6 +19,11 @@
   to   = "/.netlify/functions/increment-count"
   status = 200
 
+[[redirects]]
+  from = "/api/seed-count"
+  to   = "/.netlify/functions/seed-count"
+  status = 200
+
 # Security headers
 [[headers]]
   for = "/*"
